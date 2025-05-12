@@ -24,7 +24,7 @@ def get_wellcome_search_suggestions(keyword="appl"):
         "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
     
-    payload = {"param":{"businessCode":1,"categoryType":1,"erpStoreId":642,"venderId":5,"keyword":"纸巾","pageNum":"1","pageSize":20,"filterProperties":[],"sortKey":0,"sortRule":0},"comm":{"dmTenantId":15,"venderId":5,"businessCode":1,"origin":26,"superweb-locale":"zh_HK","storeId":642,"pickUpStoreId":"","shipmentType":1}}
+    payload = {"param":{"businessCode":1,"categoryType":1,"erpStoreId":642,"venderId":5,"keyword":keyword,"pageNum":"1","pageSize":20,"filterProperties":[],"sortKey":0,"sortRule":0},"comm":{"dmTenantId":15,"venderId":5,"businessCode":1,"origin":26,"superweb-locale":"zh_HK","storeId":642,"pickUpStoreId":"","shipmentType":1}}
     
     try:
         response = requests.post(
@@ -35,17 +35,22 @@ def get_wellcome_search_suggestions(keyword="appl"):
             verify=False
         )
         if  response.status_code == 200:
-            data = response.json()
-            return data['data']
+            print(response.text)
+            data = json.loads(response.text)
+            return data['data']['productList']
     except requests.exceptions.RequestException as e:
         print(f"请求失败: {e}")
         return None
 
 # 使用示例
 if __name__ == "__main__":
-    suggestions = get_wellcome_search_suggestions(keyword="apple")
+    suggestions = get_wellcome_search_suggestions(keyword="纸巾")
     if suggestions:
         print("搜索建议获取成功：")
-        print(json.dumps(suggestions, indent=2, ensure_ascii=False))
+    try:
+        with open('result1.json', 'w', encoding='utf-8') as f:
+            json.dump(suggestions, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+            print(f"写入文件时出错: {e}")
     else:
         print("获取搜索建议失败")
