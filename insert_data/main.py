@@ -10,9 +10,12 @@ from typing import List, Dict, Optional, Tuple
 from functools import wraps
 from urllib.parse import unquote
 
-# 后端配置
-API_URL = "http://127.0.0.1:3008"
-API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzQ3Mjk1NDI4LCJleHAiOjE3NDc5MDAyMjh9.fo4HKZWkxnLO1Du5oncvvyhHLab1J49lIQjrN8_0818"
+
+# 登录所需的用户凭证
+payload = {
+    "login_id": "su@starsnet.com.hk",
+    "password": "Password12345"
+}
 
 # shopline配置
 HEADERS = {
@@ -27,6 +30,22 @@ MAX_RETRIES = 3
 BASE_DELAY = 1
 RANDOM_DELAY_RANGE = (0.5, 1.5)
 DEFAULT_IMAGE = "https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png"
+
+def login(login_url):
+    # 发送POST请求
+    response =  requests.post(f"{login_url}/auth/login", json=payload)
+    print("response",response)
+    # 检查响应状态
+    if response.status_code == 200 or response.status_code == 201:
+        # 登录成功
+        print("登录成功！登陆的url:" ,login_url)
+        # 获取返回的数据（如token等）
+        data = response.json()
+        return data['token']
+    else:
+        # 登录失败
+        print("登录失败！")
+        print(f"状态码: {response.status_code}, 响应内容: {response.text}")
 
 # shopify 获取原始数据 start
 def fetch_and_transform_products_shopfiy(shop_url):
@@ -360,23 +379,23 @@ async def fetch_and_transform_products_shopline(shop_url):
 
 
 # 插入数据库 start
-def create_headers():
+def create_headers(token=None):
     """创建HTTP请求头"""
     return {
-        "Authorization": f"Bearer {API_TOKEN}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
 
 
-def insert_data_shopify(data,markup):
+def insert_data_shopify(data,markup,token,base_url):
     """插入或更新数据"""
     for product_item in data:
         product_item_id = product_item["id"]
         
         # 通过shopify的id去mongodb里面查询all的product
         all_product_data = requests.get(
-            f"{API_URL}/common/all/MProduct",
-            headers=create_headers(),
+            f"{base_url}/common/all/MProduct",
+            headers=create_headers(token),
             params={
                 "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
             }
@@ -388,7 +407,7 @@ def insert_data_shopify(data,markup):
             
             # 插入产品
             insert_product = requests.post(
-                f"{API_URL}/common/create/MProduct",
+                f"{base_url}/common/create/MProduct",
                 json={
                     "shopify_product_id": str(product_item_id),
                     "title": {
@@ -410,7 +429,7 @@ def insert_data_shopify(data,markup):
                     "shopify_link": "",
                     "images": [item["src"] for item in product_item["images"]]
                 },
-                headers=create_headers()
+                headers=create_headers(token)
             ).json()
 
             # 插入的product_id
@@ -420,7 +439,7 @@ def insert_data_shopify(data,markup):
             for variant_item in product_item["variants"]:
                 print(f"======insert variant id {variant_item['id']}")
                 requests.post(
-                    f"{API_URL}/common/create/MProductVariant",
+                    f"{base_url}/common/create/MProductVariant",
                     json={
                         "product_id": insert_product_id,
                         "shopify_product_variant_id": str(variant_item["id"]),
@@ -444,7 +463,7 @@ def insert_data_shopify(data,markup):
                         "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
                     },
-                    headers=create_headers()
+                    headers=create_headers(token)
                 )
         # 2. 更新产品
         else:
@@ -452,8 +471,8 @@ def insert_data_shopify(data,markup):
             
             # 通过shopify_id去查找需要更新的产品id
             get_one_product = requests.get(
-                f"{API_URL}/common/all/MProduct",
-                headers=create_headers(),
+                f"{base_url}/common/all/MProduct",
+                headers=create_headers(token),
                 params={
                     "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
                 }
@@ -464,7 +483,7 @@ def insert_data_shopify(data,markup):
 
             # 更新产品
             requests.put(
-                f"{API_URL}/common/update/{update_product_id}/MProduct",
+                f"{base_url}/common/update/{update_product_id}/MProduct",
                 json={
                     "title": {
                         "en": product_item["title"],
@@ -485,7 +504,7 @@ def insert_data_shopify(data,markup):
                     "shopify_link": "",
                     "images": [item["src"] for item in product_item["images"]]
                 },
-                headers=create_headers()
+                headers=create_headers(token)
             )
 
             # 更新产品变体
@@ -494,8 +513,8 @@ def insert_data_shopify(data,markup):
                 
                 # 通过shopify_id去查找需要更新的产品变体id
                 get_one_variant = requests.get(
-                    f"{API_URL}/common/all/MProductVariant",
-                    headers=create_headers(),
+                    f"{base_url}/common/all/MProductVariant",
+                    headers=create_headers(token),
                     params={
                         "shopify_product_variant_id": json.dumps({"$in": [str(variant_item["id"])]})
                     }
@@ -505,7 +524,7 @@ def insert_data_shopify(data,markup):
                 update_variant_id = get_one_variant["data"][0]["_id"]
 
                 requests.put(
-                    f"{API_URL}/common/update/{update_variant_id}/MProductVariant",
+                    f"{base_url}/common/update/{update_variant_id}/MProductVariant",
                     json={
                         "title": {
                             "en": variant_item["title"],
@@ -527,14 +546,14 @@ def insert_data_shopify(data,markup):
                         "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
                     },
-                    headers=create_headers()
+                    headers=create_headers(token)
                 )
 
     # 3. 删除产品
     # 获取数据库的全部产品id
     all_product_id = requests.get(
-        f"{API_URL}/common/all/MProduct",
-        headers=create_headers()
+        f"{base_url}/common/all/MProduct",
+        headers=create_headers(token)
     ).json()
 
     # 获取数据库的全部产品id
@@ -561,15 +580,15 @@ def insert_data_shopify(data,markup):
     if delete_product_id_list:
         # 删除产品
         requests.delete(
-            f"{API_URL}/common/delete/MProduct",
-            headers=create_headers(),
+            f"{base_url}/common/delete/MProduct",
+            headers=create_headers(token),
             json={"targetIds": delete_product_id_list}
         )
         
         # 获取需要删除的产品变体
         all_product_variant_id = requests.get(
-            f"{API_URL}/common/all/MProductVariant",
-            headers=create_headers(),
+            f"{base_url}/common/all/MProductVariant",
+            headers=create_headers(token),
             params={
                 "product_id": json.dumps({"$in": delete_product_id_list})
             }
@@ -581,12 +600,12 @@ def insert_data_shopify(data,markup):
         
         # 删除产品变体
         requests.delete(
-            f"{API_URL}/common/delete/MProductVariant",
-            headers=create_headers(),
+            f"{base_url}/common/delete/MProductVariant",
+            headers=create_headers(token),
             json={"targetIds": delete_product_variant_id_list}
         )
 
-def insert_data_shopline(data,markup):
+def insert_data_shopline(data,markup,token,base_url):
     """插入或更新数据"""
     for product_item in data:
         product_item_id = product_item["id"]
@@ -594,8 +613,8 @@ def insert_data_shopline(data,markup):
         
         # 通过shopify的id去mongodb里面查询all的product
         all_product_data = requests.get(
-            f"{API_URL}/common/all/MProduct",
-            headers=create_headers(),
+            f"{base_url}/common/all/MProduct",
+            headers=create_headers(token),
             params={
                 "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
             }
@@ -607,7 +626,7 @@ def insert_data_shopline(data,markup):
             
             # 插入产品
             insert_product = requests.post(
-                f"{API_URL}/common/create/MProduct",
+                f"{base_url}/common/create/MProduct",
                 json={
                     "shopify_product_id": str(product_item_id),
                     "title": {
@@ -629,7 +648,7 @@ def insert_data_shopline(data,markup):
                     "shopify_link": "",
                     "images": [product_item["image_url"]]
                 },
-                headers=create_headers()
+                headers=create_headers(token)
             ).json()
 
             # 插入的product_id
@@ -639,7 +658,7 @@ def insert_data_shopline(data,markup):
             for variant_item in product_item["variants"]:
                 print(f"======insert variant id {variant_item['id']}")
                 requests.post(
-                    f"{API_URL}/common/create/MProductVariant",
+                    f"{base_url}/common/create/MProductVariant",
                     json={
                         "product_id": insert_product_id,
                         "shopify_product_variant_id": str(variant_item["id"]),
@@ -663,7 +682,7 @@ def insert_data_shopline(data,markup):
                         "shopify_link": "",
                         "images": [product_item["image_url"]]
                     },
-                    headers=create_headers()
+                    headers=create_headers(token)
                 )
         # 2. 更新产品
         else:
@@ -671,8 +690,8 @@ def insert_data_shopline(data,markup):
             
             # 通过shopify_id去查找需要更新的产品id
             get_one_product = requests.get(
-                f"{API_URL}/common/all/MProduct",
-                headers=create_headers(),
+                f"{base_url}/common/all/MProduct",
+                headers=create_headers(token),
                 params={
                     "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
                 }
@@ -684,7 +703,7 @@ def insert_data_shopline(data,markup):
 
             # 更新产品
             requests.put(
-                f"{API_URL}/common/update/{update_product_id}/MProduct",
+                f"{base_url}/common/update/{update_product_id}/MProduct",
                 json={
                     "title": {
                         "en": product_item["title"]["en"],
@@ -705,7 +724,7 @@ def insert_data_shopline(data,markup):
                     "shopify_link": "",
                     "images": [product_item["image_url"]]
                 },
-                headers=create_headers()
+                headers=create_headers(token)
             )
 
             # 更新产品变体
@@ -714,8 +733,8 @@ def insert_data_shopline(data,markup):
                 
                 # 通过shopify_id去查找需要更新的产品变体id
                 get_one_variant = requests.get(
-                    f"{API_URL}/common/all/MProductVariant",
-                    headers=create_headers(),
+                    f"{base_url}/common/all/MProductVariant",
+                    headers=create_headers(token),
                     params={
                         "shopify_product_variant_id": json.dumps({"$in": [str(variant_item["id"])]})
                     }
@@ -725,7 +744,7 @@ def insert_data_shopline(data,markup):
                 update_variant_id = get_one_variant["data"][0]["_id"]
 
                 requests.put(
-                    f"{API_URL}/common/update/{update_variant_id}/MProductVariant",
+                    f"{base_url}/common/update/{update_variant_id}/MProductVariant",
                     json={
                         "title": {
                             "en": variant_item["title"]["en"],
@@ -747,14 +766,14 @@ def insert_data_shopline(data,markup):
                         "shopify_link": "",
                         "images": [product_item["image_url"]]
                     },
-                    headers=create_headers()
+                    headers=create_headers(token)
                 )
 
     # 3. 删除产品
     # 获取数据库的全部产品id
     all_product_id = requests.get(
-        f"{API_URL}/common/all/MProduct",
-        headers=create_headers()
+        f"{base_url}/common/all/MProduct",
+        headers=create_headers(token)
     ).json()
 
     # 获取数据库的全部产品id
@@ -781,15 +800,15 @@ def insert_data_shopline(data,markup):
     if delete_product_id_list:
         # 删除产品
         requests.delete(
-            f"{API_URL}/common/delete/MProduct",
-            headers=create_headers(),
+            f"{base_url}/common/delete/MProduct",
+            headers=create_headers(token),
             json={"targetIds": delete_product_id_list}
         )
         
         # 获取需要删除的产品变体
         all_product_variant_id = requests.get(
-            f"{API_URL}/common/all/MProductVariant",
-            headers=create_headers(),
+            f"{base_url}/common/all/MProductVariant",
+            headers=create_headers(token),
             params={
                 "product_id": json.dumps({"$in": delete_product_id_list})
             }
@@ -801,8 +820,8 @@ def insert_data_shopline(data,markup):
         
         # 删除产品变体
         requests.delete(
-            f"{API_URL}/common/delete/MProductVariant",
-            headers=create_headers(),
+            f"{base_url}/common/delete/MProductVariant",
+            headers=create_headers(token),
             json={"targetIds": delete_product_variant_id_list}
         )
 
@@ -831,16 +850,17 @@ async def loop_execute_sources():
     """循环执行sources"""
     config = get_config()
     for source in config:
-        print("--backend_url", source["base_url"])
+        token =  login(source["base_url"])
         for source_item in source["source_arr"]:
             print("----shopify_url", source_item["base_url"])
             print("----markup", source["markup"])
+            print("----backend_url", source["base_url"])
             if source_item["type"] == "SHOPIFY":
                 result = await fetch_and_transform_products_shopfiy(source_item["base_url"])
-                insert_data_shopify(result,source["markup"])
+                insert_data_shopify(result,source["markup"],token,source["base_url"])
             elif source_item["type"] == "SHOPLINE":
                 result = await fetch_and_transform_products_shopline(source_item["base_url"])
-                insert_data_shopline(result,source["markup"])
+                insert_data_shopline(result,source["markup"],token,source["base_url"])
 
 # 定时任务 end
 
@@ -848,6 +868,9 @@ def main():
     # interval = 10  # 每隔10秒获取一次数据
     # start_timer(interval)
     asyncio.run(loop_execute_sources())
+
+    # token = login("http://127.0.0.1:3008/auth/login")
+    # print("token",token)
 
 
 # 执行并保存结果
