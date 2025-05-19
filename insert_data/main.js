@@ -420,6 +420,7 @@ const startTimer = (interval) => {
 // 主函数
 const main = () => {
   const interval = 10; // 每隔10秒获取一次数据
+
   startTimer(interval);
 };
 
