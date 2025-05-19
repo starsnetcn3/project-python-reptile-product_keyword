@@ -1,922 +1,864 @@
-import threading
-import time
 import requests
+import time
 from datetime import datetime
+import re
+import json
+import asyncio
+import aiohttp
+import random
+from typing import List, Dict, Optional, Tuple
+from functools import wraps
+from urllib.parse import unquote
 
+# 后端配置
 API_URL = "http://127.0.0.1:3008"
 API_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzQ3Mjk1NDI4LCJleHAiOjE3NDc5MDAyMjh9.fo4HKZWkxnLO1Du5oncvvyhHLab1J49lIQjrN8_0818"
 
-SHOP = [
-    {
-        "id": 8106128179386,
-        "title": "Hemp Laurel Romper",
-        "handle": "hemp-laurel-romper-oasis-peony",
-        "body_html": "<p>Name a style that says summer fun more than a flowy romper — we’ll wait. With adjustable spaghetti straps in our breathable Hemp Tencel fabric, embrace whatever the day brings in the Laurel Romper.</p>",
-        "product_type": "Womens",
-        "variants": [
-            {
-                "id": 44740212162746,
-                "title": "OASIS PEONY / 2",
-                "option1": "OASIS PEONY",
-                "option2": "2",
-                "option3": null,
-                "sku": "TCW6190-5319-2",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 1,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212195514,
-                "title": "OASIS PEONY / 4",
-                "option1": "OASIS PEONY",
-                "option2": "4",
-                "option3": null,
-                "sku": "TCW6190-5319-4",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 2,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212228282,
-                "title": "OASIS PEONY / 6",
-                "option1": "OASIS PEONY",
-                "option2": "6",
-                "option3": null,
-                "sku": "TCW6190-5319-6",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 3,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212261050,
-                "title": "OASIS PEONY / 8",
-                "option1": "OASIS PEONY",
-                "option2": "8",
-                "option3": null,
-                "sku": "TCW6190-5319-8",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 4,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212293818,
-                "title": "OASIS PEONY / 10",
-                "option1": "OASIS PEONY",
-                "option2": "10",
-                "option3": null,
-                "sku": "TCW6190-5319-10",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 5,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212326586,
-                "title": "OASIS PEONY / 12",
-                "option1": "OASIS PEONY",
-                "option2": "12",
-                "option3": null,
-                "sku": "TCW6190-5319-12",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 6,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740212359354,
-                "title": "OASIS PEONY / 14",
-                "option1": "OASIS PEONY",
-                "option2": "14",
-                "option3": null,
-                "sku": "TCW6190-5319-14",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949353951418,
-                    "product_id": 8106128179386,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:30-07:00",
-                    "updated_at": "2025-03-27T16:57:31-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                    "variant_ids": [
-                        44740212162746,
-                        44740212195514,
-                        44740212228282,
-                        44740212261050,
-                        44740212293818,
-                        44740212326586,
-                        44740212359354
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 7,
-                "product_id": 8106128179386,
-                "created_at": "2025-03-27T16:57:21-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            }
-        ],
-        "images": [
-            {
-                "id": 37949353951418,
-                "created_at": "2025-03-27T16:57:30-07:00",
-                "position": 1,
-                "updated_at": "2025-03-27T16:57:31-07:00",
-                "product_id": 8106128179386,
-                "variant_ids": [
-                    44740212162746,
-                    44740212195514,
-                    44740212228282,
-                    44740212261050,
-                    44740212293818,
-                    44740212326586,
-                    44740212359354
-                ],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_5.jpg?v=1743119851",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949354082490,
-                "created_at": "2025-03-27T16:57:30-07:00",
-                "position": 2,
-                "updated_at": "2025-03-27T16:57:31-07:00",
-                "product_id": 8106128179386,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_4.jpg?v=1743119851",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949354016954,
-                "created_at": "2025-03-27T16:57:30-07:00",
-                "position": 3,
-                "updated_at": "2025-03-27T16:57:31-07:00",
-                "product_id": 8106128179386,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_2.jpg?v=1743119851",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949354049722,
-                "created_at": "2025-03-27T16:57:30-07:00",
-                "position": 4,
-                "updated_at": "2025-03-27T16:57:31-07:00",
-                "product_id": 8106128179386,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_3.jpg?v=1743119851",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949353984186,
-                "created_at": "2025-03-27T16:57:30-07:00",
-                "position": 5,
-                "updated_at": "2025-03-27T16:57:31-07:00",
-                "product_id": 8106128179386,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-5319_1.jpg?v=1743119851",
-                "width": 960,
-                "height": 1200
-            }
-        ],
-    },
+# shopline配置
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://www.rngwine.com/',
+    'Accept-Encoding': 'gzip, deflate',
+}
+TIMEOUT = aiohttp.ClientTimeout(total=30)
+CONCURRENCY_LIMIT = 5
+MAX_RETRIES = 3
+BASE_DELAY = 1
+RANDOM_DELAY_RANGE = (0.5, 1.5)
+DEFAULT_IMAGE = "https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png"
 
-    {
-        "id": 8106128113850,
-        "title": "Hemp Laurel Romper",
-        "handle": "hemp-laurel-romper-agave-green",
-        "body_html": "<p>Name a style that says summer fun more than a flowy romper — we’ll wait. With adjustable spaghetti straps in our breathable Hemp Tencel fabric, embrace whatever the day brings in the Laurel Romper.</p>",
-        "published_at": "2025-04-02T10:47:54-07:00",
-        "created_at": "2025-03-27T16:57:18-07:00",
-        "updated_at": "2025-05-16T00:07:15-07:00",
-        "vendor": "tentree",
-        "product_type": "Womens",
-        "tags": [
-            "bday-sale-SS25-20",
-            "dresses-jumpsuits",
-            "favourites",
-            "FW24-SS25",
-            "gh-womens-hemp-laurel-romper-sunray-peony",
-            "hemp",
-            "jumpsuit",
-            "online-whs",
-            "organic-cotton",
-            "points_10",
-            "romper",
-            "SP25-faves",
-            "SS25",
-            "SU25",
-            "SU25-new-style",
-            "SU25-summer-launch",
-            "supercircle",
-            "tencel",
-            "tops",
-            "w",
-            "womens"
-        ],
-        "variants": [
-            {
-                "id": 44740211769530,
-                "title": "AGAVE GREEN / 2",
-                "option1": "AGAVE GREEN",
-                "option2": "2",
-                "option3": null,
-                "sku": "TCW6190-1480-2",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 1,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211802298,
-                "title": "AGAVE GREEN / 4",
-                "option1": "AGAVE GREEN",
-                "option2": "4",
-                "option3": null,
-                "sku": "TCW6190-1480-4",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 2,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211835066,
-                "title": "AGAVE GREEN / 6",
-                "option1": "AGAVE GREEN",
-                "option2": "6",
-                "option3": null,
-                "sku": "TCW6190-1480-6",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 3,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211867834,
-                "title": "AGAVE GREEN / 8",
-                "option1": "AGAVE GREEN",
-                "option2": "8",
-                "option3": null,
-                "sku": "TCW6190-1480-8",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 4,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211900602,
-                "title": "AGAVE GREEN / 10",
-                "option1": "AGAVE GREEN",
-                "option2": "10",
-                "option3": null,
-                "sku": "TCW6190-1480-10",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 5,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211933370,
-                "title": "AGAVE GREEN / 12",
-                "option1": "AGAVE GREEN",
-                "option2": "12",
-                "option3": null,
-                "sku": "TCW6190-1480-12",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 6,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            },
-            {
-                "id": 44740211966138,
-                "title": "AGAVE GREEN / 14",
-                "option1": "AGAVE GREEN",
-                "option2": "14",
-                "option3": null,
-                "sku": "TCW6190-1480-14",
-                "requires_shipping": true,
-                "taxable": true,
-                "featured_image": {
-                    "id": 37949352968378,
-                    "product_id": 8106128113850,
-                    "position": 1,
-                    "created_at": "2025-03-27T16:57:26-07:00",
-                    "updated_at": "2025-03-27T16:57:28-07:00",
-                    "alt": "Green-Relaxed-Fit-Button-Front-A-Line-Romper",
-                    "width": 960,
-                    "height": 1200,
-                    "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                    "variant_ids": [
-                        44740211769530,
-                        44740211802298,
-                        44740211835066,
-                        44740211867834,
-                        44740211900602,
-                        44740211933370,
-                        44740211966138
-                    ]
-                },
-                "available": true,
-                "price": "98.00",
-                "grams": 800,
-                "compare_at_price": null,
-                "position": 7,
-                "product_id": 8106128113850,
-                "created_at": "2025-03-27T16:57:18-07:00",
-                "updated_at": "2025-05-16T00:07:15-07:00"
-            }
-        ],
-        "images": [
-            {
-                "id": 37949352968378,
-                "created_at": "2025-03-27T16:57:26-07:00",
-                "position": 1,
-                "updated_at": "2025-03-27T16:57:28-07:00",
-                "product_id": 8106128113850,
-                "variant_ids": [
-                    44740211769530,
-                    44740211802298,
-                    44740211835066,
-                    44740211867834,
-                    44740211900602,
-                    44740211933370,
-                    44740211966138
-                ],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_4.jpg?v=1743119848",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949352935610,
-                "created_at": "2025-03-27T16:57:26-07:00",
-                "position": 2,
-                "updated_at": "2025-03-27T16:57:28-07:00",
-                "product_id": 8106128113850,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_3.jpg?v=1743119848",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949352902842,
-                "created_at": "2025-03-27T16:57:26-07:00",
-                "position": 3,
-                "updated_at": "2025-03-27T16:57:27-07:00",
-                "product_id": 8106128113850,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_1.jpg?v=1743119847",
-                "width": 960,
-                "height": 1200
-            },
-            {
-                "id": 37949353001146,
-                "created_at": "2025-03-27T16:57:26-07:00",
-                "position": 4,
-                "updated_at": "2025-03-27T16:57:28-07:00",
-                "product_id": 8106128113850,
-                "variant_ids": [],
-                "src": "https://cdn.shopify.com/s/files/1/2341/3995/files/Green-Relaxed-Fit-Button-Front-A-Line-Romper-TCW6190-1480_2.jpg?v=1743119848",
-                "width": 960,
-                "height": 1200
-            }
-        ],
-        "options": [
-            {
-                "name": "Color",
-                "position": 1,
-                "values": [
-                    "AGAVE GREEN"
-                ]
-            },
-            {
-                "name": "Size",
-                "position": 2,
-                "values": [
-                    "2",
-                    "4",
-                    "6",
-                    "8",
-                    "10",
-                    "12",
-                    "14"
-                ]
-            }
-        ]
-    },
+# shopify 获取原始数据 start
+def fetch_and_transform_products_shopfiy(shop_url):
+    # 获取原始数据
+    print("-----shopify----start---")
+    print("--------------now shop_url",shop_url)
+    response = requests.get(shop_url,verify=False)
+    products_data = response.json().get('products', [])
+    
+    transformed_products = []
+    print(len(products_data))
+    for product in products_data:
+        # 处理 tags 字段 - 确保是列表格式
+        # tags = product.get('tags', [])
+        # if isinstance(tags, str):  # 如果 tags 是字符串，按逗号分割
+        #     tags = [tag.strip() for tag in tags.split(',')]
+        
+        # 处理 variants 变体信息
+        # variants = []
+        # for variant in product.get('variants', []):
+        #     variants.append({
+        #         "price": float(variant.get('price', 0)),
+        #         "sku": variant.get('sku', ''),
+        #         # 可以添加其他需要的变体字段，例如：
+        #         "variant_id": variant.get('id'),
+        #         "title":variant.get('title', ''),
+        #         # "inventory_quantity": variant.get('inventory_quantity', 0)
+        #     })
+        
+        # # 构建转换后的产品数据
+        # transformed = {
+        #     "_id":product.get('id',''),
+        #     "title": {
+        #         "cn": product.get('title', ''),
+        #         "en": product.get('title', '')
+        #     },
+        #     "variants": variants,  # 包含所有变体的数组
+        #     "image_url": product.get('images', [{}])[0].get('src', '') if product.get('images') else '',
+        #     "description": {
+        #         "cn": product.get('body_html', '').replace('<p>', '').replace('</p>', ''),
+        #         "en": product.get('body_html', '').replace('<p>', '').replace('</p>', '')
+        #     },
+        #     "meta_keywords": product.get('tags', '') if product.get('tags') else [],
+        #     "discount": 0  # 根据业务需求可以计算折扣
+        # }
+        # image=transformed['image_url']
 
-]
-
-def fetch_data():
-
-    all_product_data = get_all_product_data()
-    all_product_variant_data = get_all_product_variant_data()
-    # 数据库没有数据直插入
-    if(0 == len(all_product_data['data']) or 0 == len(all_product_variant_data['data'])):
-        if(0 == len(all_product_data['data'])):
-            for product in products:
-                insert_product_data(product)
-        if(0 == len(all_product_variant_data['data'])):
-            for product_variant in product_variants:
-                insert_product_variant_data(product_variant)
-    else:
-        all_product_data_id = [obj['_id'] for obj in all_product_data["data"] ]
-        all_product_data_variant_id = [obj['_id'] for obj in all_product_variant_data["data"] ]
-        print("all product id")
-        print(all_product_data_id)
-        print("all product variant id")
-        print(all_product_data_variant_id)
-        # 检测机制
-        ## product
-        ### 1. 插入新的产品
-        for product in products:
-            if product['_id'] not in all_product_data_id:
-                print(f"insert product_id:{product['_id']}")
-                insert_product_data(product)  # 插入新产品
-            else:
-                print(f"update product_id:{product['_id']}")
-                update_product_data(product)   # 更新已有产品
-
-        ### 3. 删除不存在的产品
-        for product_id in all_product_data_id:
-            if not any(product['_id'] == product_id for product in products):
-                print(f"delete product_id:{product_id}")
-                delete_product_data(product_id)
-
-        ## product_variant
-        ### 1. 插入新的产品变体
-        for product_variant in product_variants:
-            if product_variant['_id'] not in all_product_data_variant_id:
-                print(f"insert product_variant_id:{product_variant['_id']}")
-                insert_product_variant_data(product_variant)
-            else:
-                print(f"update product_variant_id:{product_variant['_id']}")
-                update_product_variant_data(product_variant)
+        # 上传【图片
+        # # 后缀
+        # images = product.get('images', [])
+        # upload_images = []
+        # for image in images:
+        #     extension = image['src'].split('.')[-1][0:3]
+        #     print("2222",extension)
+        #     body = {
+        #         "url": image['src'],
+        #         "extension": extension
+        #     }
+        #     res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+        #                         json=body)
+        #     print("20002202020",res.status_code,body)
+        #     if res.status_code == 500:
+        #         image['src'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+        #         # product["images"][0]['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+        #     elif res.status_code == 200:
+        #         print('res.text',res.text)
+        #         image['src'] = res.text
             
-        ### 3. 删除不存在的产品变体
-        for product_variant_id in all_product_data_variant_id:
-            if not any(product_variant_id == product_variant['_id'] for product_variant in product_variants):
-                print(f"delete product_variant_id:{product_variant_id}")
-                delete_product_variant_data(product_variant_id)
+        #     upload_images.append(image)
+        # # print(transformed)
+        # product['images'] = upload_images
 
-def get_all_product_data():
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
+        # # 变体的图片
+        # variants = product.get('variants', [])
+        # upload_variants=[]
+        # for variant in variants:
+        #     extension = variant['featured_image']['src'].split('.')[-1][0:3]
+        #     print("2222",extension)
+        #     body = {
+        #         "url": variant['featured_image']['src'],
+        #         "extension": extension
+        #     }
+        #     res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+        #                         json=body)
+        #     print("20002202020",res.status_code,body)
+        #     if res.status_code == 500:
+        #         variant['featured_image']['src'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+        #         # product["images"][0]['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+        #     elif res.status_code == 200:
+        #         print('res.text',res.text)
+        #         variant['featured_image']['src'] = res.text
+            
+        #     upload_variants.append(variant)
+        # # print(transformed)
+        # product['variants'] = upload_variants
+
+        transformed_products.append(product)
+    
+    return transformed_products
+# shopify 获取原始数据 end
+
+# shopline 获取原始数据 start
+# 工具函数
+def get_extension(url: str) -> str:
+    """健壮的扩展名提取函数"""
+    if not url:
+        return ''
+    
+    # 解码URL并清理
+    decoded_url = unquote(url)
+    clean_url = decoded_url.split('?')[0].split('#')[0].lower()
+    
+    # 支持的图片扩展名
+    extensions = {
+        '.jpeg': 'jpeg',
+        '.jpg': 'jpg',
+        '.png': 'png',
+        '.webp': 'webp',
+        '.gif': 'gif'
+    }
+    
+    for ext, ext_name in extensions.items():
+        if clean_url.endswith(ext):
+            return ext_name
+    
+    return 'jpg'  # 默认值
+
+def fix_unicode_text(text: str) -> str:
+    """修复Unicode乱码"""
+    if not text:
+        return text
+    
+    # 常见乱码模式修复
+    if 'ç' in text or 'å' in text:
+        try:
+            return text.encode('latin1').decode('utf-8')
+        except:
+            pass
+    
+    return text
+
+def parse_product_json(json_str: str) -> Dict:
+    """健壮的JSON解析函数"""
+    try:
+        # 尝试直接解析
+        data = json.loads(json_str.encode('utf-8').decode('unicode_escape'))
+        
+        # 深度修复可能存在的乱码
+        def deep_fix(item):
+            if isinstance(item, str):
+                return fix_unicode_text(item)
+            elif isinstance(item, dict):
+                return {k: deep_fix(v) for k, v in item.items()}
+            elif isinstance(item, list):
+                return [deep_fix(i) for i in item]
+            return item
+        
+        return deep_fix(data)
+    except json.JSONDecodeError:
+        # 如果失败，尝试修复常见JSON格式问题
+        fixed_str = re.sub(r'\\+"', '"', json_str)  # 修复转义引号
+        return json.loads(fixed_str.encode('utf-8').decode('unicode_escape'))
+
+# 重试装饰器
+def async_retry(max_retries: int = MAX_RETRIES, 
+               base_delay: float = BASE_DELAY,
+               exceptions: Tuple = (Exception,)):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    if retries > 0:
+                        delay = base_delay * (2 ** (retries - 1))
+                        delay += random.uniform(*RANDOM_DELAY_RANGE)
+                        print(f"Retry {retries}/{max_retries}, waiting {delay:.2f}s...")
+                        await asyncio.sleep(delay)
+                    return await func(*args, **kwargs)
+                except exceptions as e:
+                    retries += 1
+                    if retries == max_retries:
+                        print(f"Max retries reached for {func.__name__}: {str(e)}")
+                        raise
+        return wrapper
+    return decorator
+
+# 核心功能
+@async_retry()
+async def fetch_html(session: aiohttp.ClientSession, url: str) -> Optional[str]:
+    """带重试的HTML获取"""
+    try:
+        async with session.get(url, headers=HEADERS, timeout=TIMEOUT) as response:
+            response.raise_for_status()
+            return await response.text()
+    except Exception as e:
+        print(f"Failed to fetch {url}: {e}")
+        raise
+
+@async_retry(max_retries=2)
+async def upload_image(session: aiohttp.ClientSession, image_url: str) -> str:
+    """图片上传函数"""
+    if not image_url:
+        return DEFAULT_IMAGE
+    
+    # image=image_url
+    extension = get_extension(image_url)
+    if extension == 'jpeg':
+        extension = 'jpg'
+    # extension = image.split('.')[-1][0:3]
+    # print("extension",extension)
+    payload = {"url": image_url, "extension": extension}
+    
+    try:
+        async with session.post(
+            "https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+            json=payload
+        ) as response:
+            if response.status == 200:
+                return await response.text()
+            return image_url  # 上传失败返回原URL
+    except Exception as e:
+        print(f"Image upload failed: {e}")
+        return image_url
+
+@async_retry()
+async def get_product_ids(session: aiohttp.ClientSession, list_url: str) -> List[str]:
+    """获取产品ID列表"""
+    html = await fetch_html(session, list_url)
+    if not html:
+        return []
+    
+    match = re.search(r"app\.value\('products', JSON\.parse\('(\[.*?\])'\)", html)
+    if not match:
+        return []
+    
+    try:
+        products = parse_product_json(match.group(1))
+        return [str(p['id']) for p in products]
+    except Exception as e:
+        print(f"Failed to parse product IDs: {e}")
+        raise
+
+@async_retry()
+async def get_product_details(session: aiohttp.ClientSession, product_id: str) -> Optional[Dict]:
+    """获取产品详情"""
+    url = f"https://www.rngwine.com/products/{product_id}"
+    html = await fetch_html(session, url)
+    if not html:
+        return None
+    
+    match = re.search(r"app\.value\('product', JSON\.parse\('({.*?})'\)", html)
+    if not match:
+        return None
+    
+    try:
+        product = parse_product_json(match.group(1))
+        image_url = product.get('media', [{}])[0].get('images', {}).get('original', {}).get('url', '')
+        
+        # 处理多语言标题
+        title_translations = product.get('title_translations', {})
+        cn_title = fix_unicode_text(title_translations.get('zh-hant', ''))
+        en_title = fix_unicode_text(title_translations.get('en', ''))
+        
+        # 异步上传图片
+        uploaded_url = await upload_image(session, image_url)
+        
+        return {
+            "_id":product.get('_id', ''),
+            "title": {
+                "cn": cn_title,
+                "en": en_title
+            },
+            "price": float(product.get('price', {}).get('dollars', 0)),
+            "image_url": uploaded_url,
+            "description": {
+                "cn": cn_title,
+                "en": en_title
+            },
+            "meta_keywords": product.get('seo_keywords', []),
+            "sku": product.get('sku', ''),
+            "discount": 0
+        }
+    except Exception as e:
+        print(f"Failed to parse product {product_id}: {e}")
+        raise
+
+async def process_product(session: aiohttp.ClientSession, product_id: str, semaphore: asyncio.Semaphore):
+    """处理单个产品（带并发控制）"""
+    async with semaphore:
+        await asyncio.sleep(random.uniform(0.5, 2))  # 随机延迟防封
+        try:
+            return await get_product_details(session, product_id)
+        except Exception as e:
+            print(f"Error processing product {product_id}: {e}")
+            return None
+
+async def fetch_and_transform_products_shopline(shop_url):
+    """主函数"""
+    print("----shopline----start---")
+    print("--------------now shop_url",shop_url)
+    
+    semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
+    
+    async with aiohttp.ClientSession(headers=HEADERS, timeout=TIMEOUT) as session:
+        print("Fetching product IDs...")
+        product_ids = await get_product_ids(session, shop_url)
+        print(f"Found {len(product_ids)} products")
+        
+        if not product_ids:
+            print("No products found")
+            return
+        
+        print("Processing products...")
+        tasks = [process_product(session, pid, semaphore) for pid in product_ids]
+        products = await asyncio.gather(*tasks)
+        for item in products:
+            item['id'] = item.pop('_id')  # 将 _id 修改为 id
+            item['variants'] = [item.copy()]  
+        return products
+        
+        # valid_products = [p for p in products if p]
+        # with open('products.json', 'w', encoding='utf-8') as f:
+        #     json.dump(valid_products, f, ensure_ascii=False, indent=4)
+        
+        # print(f"Successfully saved {len(valid_products)}/{len(product_ids)} products")
+        # if len(valid_products) < len(product_ids):
+        #     print("Warning: Some products failed to process")
+
+# shopline 获取原始数据 end
+
+
+# 插入数据库 start
+def create_headers():
+    """创建HTTP请求头"""
+    return {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Content-Type": "application/json"
     }
 
-    try:
-        response = requests.get(API_URL+"/common/all/MProduct", headers=headers)
 
-        # 检查响应状态
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+def insert_data_shopify(data,markup):
+    """插入或更新数据"""
+    for product_item in data:
+        product_item_id = product_item["id"]
+        
+        # 通过shopify的id去mongodb里面查询all的product
+        all_product_data = requests.get(
+            f"{API_URL}/common/all/MProduct",
+            headers=create_headers(),
+            params={
+                "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
+            }
+        ).json()
 
-def get_all_product_variant_data():
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
+        # 1. 插入新的产品
+        if not all_product_data["data"]:
+            print(f"===insert product id {product_item_id}")
+            
+            # 插入产品
+            insert_product = requests.post(
+                f"{API_URL}/common/create/MProduct",
+                json={
+                    "shopify_product_id": str(product_item_id),
+                    "title": {
+                        "en": product_item["title"],
+                        "zh": product_item["title"],
+                        "cn": product_item["title"]
+                    },
+                    "short_description": {
+                        "en": product_item["handle"],
+                        "zh": product_item["handle"],
+                        "cn": product_item["handle"]
+                    },
+                    "long_description": {
+                        "en": product_item["body_html"],
+                        "zh": product_item["body_html"],
+                        "cn": product_item["body_html"]
+                    },
+                    "status": "ACTIVE",
+                    "shopify_link": "",
+                    "images": [item["src"] for item in product_item["images"]]
+                },
+                headers=create_headers()
+            ).json()
 
-    try:
-        response = requests.get(API_URL+"/common/all/MProductVariant", headers=headers)
+            # 插入的product_id
+            insert_product_id = insert_product["data"]["_id"]
 
-        # 检查响应状态
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+            # 插入产品变体
+            for variant_item in product_item["variants"]:
+                print(f"======insert variant id {variant_item['id']}")
+                requests.post(
+                    f"{API_URL}/common/create/MProductVariant",
+                    json={
+                        "product_id": insert_product_id,
+                        "shopify_product_variant_id": str(variant_item["id"]),
+                        "title": {
+                            "en": variant_item["title"],
+                            "zh": variant_item["title"],
+                            "cn": variant_item["title"]
+                        },
+                        "short_description": {
+                            "en": product_item["handle"],
+                            "zh": product_item["handle"],
+                            "cn": product_item["handle"]
+                        },
+                        "long_description": {
+                            "en": product_item["body_html"],
+                            "zh": product_item["body_html"],
+                            "cn": product_item["body_html"]
+                        },
+                        "price": float(variant_item["price"]*(1 + markup)),
+                        "status": "ACTIVE",
+                        "shopify_link": "",
+                        "images": [variant_item.get("featured_image", {}).get("src")]
+                    },
+                    headers=create_headers()
+                )
+        # 2. 更新产品
+        else:
+            print(f"===update product id {product_item_id}")
+            
+            # 通过shopify_id去查找需要更新的产品id
+            get_one_product = requests.get(
+                f"{API_URL}/common/all/MProduct",
+                headers=create_headers(),
+                params={
+                    "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
+                }
+            ).json()
 
-def insert_product_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
+            # 拿到需要更新的产品id
+            update_product_id = get_one_product["data"][0]["_id"]
 
-    try:
-        response = requests.post(API_URL+"/common/create/MProduct", headers=headers, json=data)
+            # 更新产品
+            requests.put(
+                f"{API_URL}/common/update/{update_product_id}/MProduct",
+                json={
+                    "title": {
+                        "en": product_item["title"],
+                        "zh": product_item["title"],
+                        "cn": product_item["title"]
+                    },
+                    "short_description": {
+                        "en": product_item["handle"],
+                        "zh": product_item["handle"],
+                        "cn": product_item["handle"]
+                    },
+                    "long_description": {
+                        "en": product_item["body_html"],
+                        "zh": product_item["body_html"],
+                        "cn": product_item["body_html"]
+                    },
+                    "status": "ACTIVE",
+                    "shopify_link": "",
+                    "images": [item["src"] for item in product_item["images"]]
+                },
+                headers=create_headers()
+            )
 
-        # 检查响应状态
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+            # 更新产品变体
+            for variant_item in product_item["variants"]:
+                print(f"======update variant id {variant_item['id']}")
+                
+                # 通过shopify_id去查找需要更新的产品变体id
+                get_one_variant = requests.get(
+                    f"{API_URL}/common/all/MProductVariant",
+                    headers=create_headers(),
+                    params={
+                        "shopify_product_variant_id": json.dumps({"$in": [str(variant_item["id"])]})
+                    }
+                ).json()
 
-def insert_product_variant_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
+                # 拿到需要更新的产品变体id
+                update_variant_id = get_one_variant["data"][0]["_id"]
 
-    try:
-        response = requests.post(API_URL+"/common/create/MProductVariant", headers=headers, json=data)
+                requests.put(
+                    f"{API_URL}/common/update/{update_variant_id}/MProductVariant",
+                    json={
+                        "title": {
+                            "en": variant_item["title"],
+                            "zh": variant_item["title"],
+                            "cn": variant_item["title"]
+                        },
+                        "short_description": {
+                            "en": product_item["handle"],
+                            "zh": product_item["handle"],
+                            "cn": product_item["handle"]
+                        },
+                        "long_description": {
+                            "en": product_item["body_html"],
+                            "zh": product_item["body_html"],
+                            "cn": product_item["body_html"]
+                        },
+                        "price": float(variant_item["price"]*(1 + markup)),
+                        "status": "ACTIVE",
+                        "shopify_link": "",
+                        "images": [variant_item.get("featured_image", {}).get("src")]
+                    },
+                    headers=create_headers()
+                )
 
-        # 检查响应状态
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+    # 3. 删除产品
+    # 获取数据库的全部产品id
+    all_product_id = requests.get(
+        f"{API_URL}/common/all/MProduct",
+        headers=create_headers()
+    ).json()
 
-def update_product_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
-    update_id = data['_id']
-    try:
-        response = requests.put(API_URL+f'/common/update/{update_id}/MProduct', headers=headers, json=data)
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+    # 获取数据库的全部产品id
+    all_shopify_product_id_list = [
+        {"id": item["shopify_product_id"], "_id": item["_id"]}
+        for item in all_product_id["data"]
+    ]
 
-def update_product_variant_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
-    update_id = data['_id']
-    try:
-        response = requests.put(API_URL+f'/common/update/{update_id}/MProductVariant', headers=headers, json=data)
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+    # 获取shopify的全部产品id
+    shopify_product_id_list = data
 
-def delete_product_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
-    json_data = {"targetIds":[data]}
-    try:
-        response = requests.delete(API_URL+'/common/delete/MProduct', headers=headers, json=json_data)
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+    # 获取需要删除的product
+    difference = [
+        obj1 for obj1 in all_shopify_product_id_list
+        if not any(str(obj2["id"]) == obj1["id"] for obj2 in shopify_product_id_list)
+    ]
 
-def delete_product_variant_data(data):
-    headers = {
-        'Authorization': f'Bearer {API_TOKEN}',
-        'Content-Type': 'application/json'
-    }
-    json_data = {"targetIds":[data]}
-    try:
-        response = requests.delete(API_URL+'/common/delete/MProductVariant', headers=headers, json=json_data)
-        response.raise_for_status()
-        return response.json()  # 返回 JSON 格式的响应
-    except requests.exceptions.HTTPError as err:
-        print(f"HTTP错误: {err}")
-    except Exception as e:
-        print(f"发生错误: {e}")
+    # 需要删除的产品id
+    delete_product_id_list = [item["_id"] for item in difference]
 
+    print("===delete_product_id_list", delete_product_id_list)
+
+    # 删除不存在的产品
+    if delete_product_id_list:
+        # 删除产品
+        requests.delete(
+            f"{API_URL}/common/delete/MProduct",
+            headers=create_headers(),
+            json={"targetIds": delete_product_id_list}
+        )
+        
+        # 获取需要删除的产品变体
+        all_product_variant_id = requests.get(
+            f"{API_URL}/common/all/MProductVariant",
+            headers=create_headers(),
+            params={
+                "product_id": json.dumps({"$in": delete_product_id_list})
+            }
+        ).json()
+        
+        # 获取需要删除的产品变体id
+        delete_product_variant_id_list = [item["_id"] for item in all_product_variant_id["data"]]
+        print("===delete_product_variant_id_list", delete_product_variant_id_list)
+        
+        # 删除产品变体
+        requests.delete(
+            f"{API_URL}/common/delete/MProductVariant",
+            headers=create_headers(),
+            json={"targetIds": delete_product_variant_id_list}
+        )
+
+def insert_data_shopline(data,markup):
+    """插入或更新数据"""
+    for product_item in data:
+        product_item_id = product_item["id"]
+        print("----product_item_id", product_item_id)
+        
+        # 通过shopify的id去mongodb里面查询all的product
+        all_product_data = requests.get(
+            f"{API_URL}/common/all/MProduct",
+            headers=create_headers(),
+            params={
+                "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
+            }
+        ).json()
+
+        # 1. 插入新的产品
+        if not all_product_data["data"]:
+            print(f"===insert product id {product_item_id}")
+            
+            # 插入产品
+            insert_product = requests.post(
+                f"{API_URL}/common/create/MProduct",
+                json={
+                    "shopify_product_id": str(product_item_id),
+                    "title": {
+                        "en": product_item["title"]["en"],
+                        "zh": product_item["title"]["en"],
+                        "cn": product_item["title"]["en"]
+                    },
+                    "short_description": {
+                        "en": product_item["description"]["en"],
+                        "zh": product_item["description"]["en"],
+                        "cn": product_item["description"]["en"]
+                    },
+                    "long_description": {
+                        "en": product_item["description"]["en"],
+                        "zh": product_item["description"]["en"],
+                        "cn": product_item["description"]["en"]
+                    },
+                    "status": "ACTIVE",
+                    "shopify_link": "",
+                    "images": [product_item["image_url"]]
+                },
+                headers=create_headers()
+            ).json()
+
+            # 插入的product_id
+            insert_product_id = insert_product["data"]["_id"]
+
+            # 插入产品变体
+            for variant_item in product_item["variants"]:
+                print(f"======insert variant id {variant_item['id']}")
+                requests.post(
+                    f"{API_URL}/common/create/MProductVariant",
+                    json={
+                        "product_id": insert_product_id,
+                        "shopify_product_variant_id": str(variant_item["id"]),
+                        "title": {
+                            "en": variant_item["title"]["en"],
+                            "zh": variant_item["title"]["en"],
+                            "cn": variant_item["title"]["en"]
+                        },
+                        "short_description": {
+                            "en": product_item["description"]["en"],
+                            "zh": product_item["description"]["en"],
+                            "cn": product_item["description"]["en"]
+                        },
+                        "long_description": {
+                            "en": product_item["description"]["en"],
+                            "zh": product_item["description"]["en"],
+                            "cn": product_item["description"]["en"]
+                        },
+                        "price": float(variant_item["price"]*(1 + markup)),
+                        "status": "ACTIVE",
+                        "shopify_link": "",
+                        "images": [product_item["image_url"]]
+                    },
+                    headers=create_headers()
+                )
+        # 2. 更新产品
+        else:
+            print(f"===update product id {product_item_id}")
+            
+            # 通过shopify_id去查找需要更新的产品id
+            get_one_product = requests.get(
+                f"{API_URL}/common/all/MProduct",
+                headers=create_headers(),
+                params={
+                    "shopify_product_id": json.dumps({"$in": [str(product_item_id)]})
+                }
+            ).json()
+
+            # 拿到需要更新的产品id
+            update_product_id = get_one_product["data"][0]["_id"]
+            print("----update_product_id", update_product_id)
+
+            # 更新产品
+            requests.put(
+                f"{API_URL}/common/update/{update_product_id}/MProduct",
+                json={
+                    "title": {
+                        "en": product_item["title"]["en"],
+                        "zh": product_item["title"]["en"],
+                        "cn": product_item["title"]["en"]
+                    },
+                    "short_description": {
+                        "en": product_item["description"]["en"],
+                        "zh": product_item["description"]["en"],
+                        "cn": product_item["description"]["en"]
+                    },
+                    "long_description": {
+                        "en": product_item["description"]["en"],
+                        "zh": product_item["description"]["en"],
+                        "cn": product_item["description"]["en"]
+                    },
+                    "status": "ACTIVE",
+                    "shopify_link": "",
+                    "images": [product_item["image_url"]]
+                },
+                headers=create_headers()
+            )
+
+            # 更新产品变体
+            for variant_item in product_item["variants"]:
+                print(f"======update variant id {variant_item['id']}")
+                
+                # 通过shopify_id去查找需要更新的产品变体id
+                get_one_variant = requests.get(
+                    f"{API_URL}/common/all/MProductVariant",
+                    headers=create_headers(),
+                    params={
+                        "shopify_product_variant_id": json.dumps({"$in": [str(variant_item["id"])]})
+                    }
+                ).json()
+
+                # 拿到需要更新的产品变体id
+                update_variant_id = get_one_variant["data"][0]["_id"]
+
+                requests.put(
+                    f"{API_URL}/common/update/{update_variant_id}/MProductVariant",
+                    json={
+                        "title": {
+                            "en": variant_item["title"]["en"],
+                            "zh": variant_item["title"]["en"],
+                            "cn": variant_item["title"]["en"]
+                        },
+                        "short_description": {
+                            "en": product_item["description"]["en"],
+                            "zh": product_item["description"]["en"],
+                            "cn": product_item["description"]["en"]
+                        },
+                        "long_description": {
+                            "en": product_item["description"]["en"],
+                            "zh": product_item["description"]["en"],
+                            "cn": product_item["description"]["en"]
+                        },
+                        "price": float(variant_item["price"]*(1 + markup)),
+                        "status": "ACTIVE",
+                        "shopify_link": "",
+                        "images": [product_item["image_url"]]
+                    },
+                    headers=create_headers()
+                )
+
+    # 3. 删除产品
+    # 获取数据库的全部产品id
+    all_product_id = requests.get(
+        f"{API_URL}/common/all/MProduct",
+        headers=create_headers()
+    ).json()
+
+    # 获取数据库的全部产品id
+    all_shopify_product_id_list = [
+        {"id": item["shopify_product_id"], "_id": item["_id"]}
+        for item in all_product_id["data"]
+    ]
+
+    # 获取shopify的全部产品id
+    shopify_product_id_list = data
+
+    # 获取需要删除的product
+    difference = [
+        obj1 for obj1 in all_shopify_product_id_list
+        if not any(str(obj2["id"]) == obj1["id"] for obj2 in shopify_product_id_list)
+    ]
+
+    # 需要删除的产品id
+    delete_product_id_list = [item["_id"] for item in difference]
+
+    print("===delete_product_id_list", delete_product_id_list)
+
+    # 删除不存在的产品
+    if delete_product_id_list:
+        # 删除产品
+        requests.delete(
+            f"{API_URL}/common/delete/MProduct",
+            headers=create_headers(),
+            json={"targetIds": delete_product_id_list}
+        )
+        
+        # 获取需要删除的产品变体
+        all_product_variant_id = requests.get(
+            f"{API_URL}/common/all/MProductVariant",
+            headers=create_headers(),
+            params={
+                "product_id": json.dumps({"$in": delete_product_id_list})
+            }
+        ).json()
+        
+        # 获取需要删除的产品变体id
+        delete_product_variant_id_list = [item["_id"] for item in all_product_variant_id["data"]]
+        print("===delete_product_variant_id_list", delete_product_variant_id_list)
+        
+        # 删除产品变体
+        requests.delete(
+            f"{API_URL}/common/delete/MProductVariant",
+            headers=create_headers(),
+            json={"targetIds": delete_product_variant_id_list}
+        )
+
+
+# 插入数据库 end
+
+# 获取配置 start
+def get_config():
+    """获取配置信息"""
+    config = requests.get(
+        "http://localhost:5000/api/destinations",
+        headers=create_headers()
+    ).json()
+    return config
+# 获取配置 end
+
+# 定时任务 start
 def start_timer(interval):
-    while True:
-        print("开始执行 fetch_data() at", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        fetch_data()
-        time.sleep(interval)  # 设置间隔时间
+    """开始定时器"""
+    print(f"开始定时任务，每{interval}秒执行一次")
+
+    asyncio.run(loop_execute_sources())
 
 
+async def loop_execute_sources():
+    """循环执行sources"""
+    config = get_config()
+    for source in config:
+        print("--backend_url", source["base_url"])
+        for source_item in source["source_arr"]:
+            print("----shopify_url", source_item["base_url"])
+            print("----markup", source["markup"])
+            if source_item["type"] == "SHOPIFY":
+                result = await fetch_and_transform_products_shopfiy(source_item["base_url"])
+                insert_data_shopify(result,source["markup"])
+            elif source_item["type"] == "SHOPLINE":
+                result = await fetch_and_transform_products_shopline(source_item["base_url"])
+                insert_data_shopline(result,source["markup"])
+
+# 定时任务 end
+
+def main():
+    # interval = 10  # 每隔10秒获取一次数据
+    # start_timer(interval)
+    asyncio.run(loop_execute_sources())
+
+
+# 执行并保存结果
 if __name__ == "__main__":
-    interval = 10  # 每隔10秒获取一次数据
-    timer_thread = threading.Thread(target=start_timer, args=(interval,))
-    timer_thread.start()
+    try:
+        main()
+        # result = fetch_and_transform_products()
+        # print("result",result)
+        # with open('transformed_products_with_variants.json', 'w', encoding='utf-8') as f:
+        #     json.dump(result, f, ensure_ascii=False, indent=4)
+        # print("转换完成，结果已保存到 transformed_products_with_variants.json")
+        # print(f"共处理了 {len(result)} 个产品")
+    except Exception as e:
+        print(f"发生错误: {e}")

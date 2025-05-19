@@ -417,11 +417,31 @@ const startTimer = (interval) => {
   }, interval * 1000);
 };
 
-// 主函数
-const main = () => {
-  const interval = 10; // 每隔10秒获取一次数据
+//获取配置信息
+const get_config = async () => {
+  const config = await axios.get(`http://localhost:5000/api/destinations`, {
+    headers: createHeaders(),
+  });
+  return config.data;
+};
 
-  startTimer(interval);
+//循环执行sources
+const loop_execute_sources = async () => {
+  const config = await get_config();
+  config.map(async (source) => {
+    console.log("--backend_url", source.base_url);
+    source.source_arr.map(async (source_item) => {
+      console.log("----shopify_url", source_item.base_url);
+    });
+  });
+};
+
+// 主函数
+const main = async () => {
+  // const interval = 10; // 每隔10秒获取一次数据
+
+  // startTimer(interval);
+  loop_execute_sources();
 };
 
 // 启动程序

@@ -232,6 +232,10 @@ async def main():
         print("Processing products...")
         tasks = [process_product(session, pid, semaphore) for pid in product_ids]
         products = await asyncio.gather(*tasks)
+        for item in products:
+            item['id'] = item.pop('_id')  # 将 _id 修改为 id
+            item['variants'] = [item.copy()]  # 创建variants并复制原始项的数据
+
         
         valid_products = [p for p in products if p]
         with open('products.json', 'w', encoding='utf-8') as f:
