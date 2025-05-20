@@ -118,29 +118,29 @@ def fetch_and_transform_products_shopfiy(shop_url):
         # # print(transformed)
         # product['images'] = upload_images
 
-        # # 变体的图片
-        # variants = product.get('variants', [])
-        # upload_variants=[]
-        # for variant in variants:
-        #     extension = variant['featured_image']['src'].split('.')[-1][0:3]
-        #     print("2222",extension)
-        #     body = {
-        #         "url": variant['featured_image']['src'],
-        #         "extension": extension
-        #     }
-        #     res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
-        #                         json=body)
-        #     print("20002202020",res.status_code,body)
-        #     if res.status_code == 500:
-        #         variant['featured_image']['src'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
-        #         # product["images"][0]['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
-        #     elif res.status_code == 200:
-        #         print('res.text',res.text)
-        #         variant['featured_image']['src'] = res.text
+        # 变体的图片
+        variants = product.get('variants', [])
+        upload_variants=[]
+        for variant in variants:
+            extension = variant['featured_image']['src'].split('.')[-1][0:3]
+            print("2222",extension)
+            body = {
+                "url": variant['featured_image']['src'],
+                "extension": extension
+            }
+            res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+                                json=body)
+            print("20002202020",res.status_code,body)
+            if res.status_code == 500:
+                variant['featured_image']['src'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+                # product["images"][0]['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+            elif res.status_code == 200:
+                print('res.text',res.text)
+                variant['featured_image']['src'] = res.text
             
-        #     upload_variants.append(variant)
-        # # print(transformed)
-        # product['variants'] = upload_variants
+            upload_variants.append(variant)
+        # print(transformed)
+        product['variants'] = upload_variants
 
         transformed_products.append(product)
     
@@ -458,7 +458,7 @@ def insert_data_shopify(data,markup,token,base_url):
                             "zh": product_item["body_html"],
                             "cn": product_item["body_html"]
                         },
-                        "price": float(variant_item["price"]*(1 + markup)),
+                        "price": float(float(variant_item["price"])*(1 + markup)),
                         "status": "ACTIVE",
                         "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
@@ -541,7 +541,7 @@ def insert_data_shopify(data,markup,token,base_url):
                             "zh": product_item["body_html"],
                             "cn": product_item["body_html"]
                         },
-                        "price": float(variant_item["price"]*(1 + markup)),
+                        "price": float(float(variant_item["price"])*(1 + markup)),
                         "status": "ACTIVE",
                         "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
@@ -856,7 +856,7 @@ async def loop_execute_sources():
             print("----markup", source["markup"])
             print("----backend_url", source["base_url"])
             if source_item["type"] == "SHOPIFY":
-                result = await fetch_and_transform_products_shopfiy(source_item["base_url"])
+                result =  fetch_and_transform_products_shopfiy(source_item["base_url"])
                 insert_data_shopify(result,source["markup"],token,source["base_url"])
             elif source_item["type"] == "SHOPLINE":
                 result = await fetch_and_transform_products_shopline(source_item["base_url"])
@@ -865,9 +865,9 @@ async def loop_execute_sources():
 # 定时任务 end
 
 def main():
-    # interval = 10  # 每隔10秒获取一次数据
-    # start_timer(interval)
-    asyncio.run(loop_execute_sources())
+    interval = 60 * 10  # 每隔10秒获取一次数据
+    start_timer(interval)
+    # asyncio.run(loop_execute_sources())
 
     # token = login("http://127.0.0.1:3008/auth/login")
     # print("token",token)

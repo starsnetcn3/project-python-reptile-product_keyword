@@ -17,52 +17,77 @@ def fetch_and_transform_products():
         #     tags = [tag.strip() for tag in tags.split(',')]
         
         # 处理 variants 变体信息
-        variants = []
-        for variant in product.get('variants', []):
-            variants.append({
-                "price": float(variant.get('price', 0)),
-                "sku": variant.get('sku', ''),
-                # 可以添加其他需要的变体字段，例如：
-                "variant_id": variant.get('id'),
-                "title":variant.get('title', ''),
-                # "inventory_quantity": variant.get('inventory_quantity', 0)
-            })
+        # variants = []
+        # for variant in product.get('variants', []):
+        #     variants.append({
+        #         "price": float(variant.get('price', 0)),
+        #         "sku": variant.get('sku', ''),
+        #         # 可以添加其他需要的变体字段，例如：
+        #         "variant_id": variant.get('id'),
+        #         "title":variant.get('title', ''),
+        #         # "inventory_quantity": variant.get('inventory_quantity', 0)
+        #     })
         
-        # 构建转换后的产品数据
-        transformed = {
-            "_id":product.get('id',''),
-            "title": {
-                "cn": product.get('title', ''),
-                "en": product.get('title', '')
-            },
-            "variants": variants,  # 包含所有变体的数组
-            "image_url": product.get('images', [{}])[0].get('src', '') if product.get('images') else '',
-            "description": {
-                "cn": product.get('body_html', '').replace('<p>', '').replace('</p>', ''),
-                "en": product.get('body_html', '').replace('<p>', '').replace('</p>', '')
-            },
-            "meta_keywords": product.get('tags', '') if product.get('tags') else [],
-            "discount": 0  # 根据业务需求可以计算折扣
-        }
-        image=transformed['image_url']
-        # 后缀
-        extension = image.split('.')[-1][0:3]
-        print("2222",extension)
-        body = {
-            "url": image,
-            "extension": extension
-        }
-        res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
-                            json=body)
-        print("20002202020",res.status_code,body)
-        if res.status_code == 500:
+        # # 构建转换后的产品数据
+        # transformed = {
+        #     "_id":product.get('id',''),
+        #     "title": {
+        #         "cn": product.get('title', ''),
+        #         "en": product.get('title', '')
+        #     },
+        #     "variants": variants,  # 包含所有变体的数组
+        #     "image_url": product.get('images', [{}])[0].get('src', '') if product.get('images') else '',
+        #     "description": {
+        #         "cn": product.get('body_html', '').replace('<p>', '').replace('</p>', ''),
+        #         "en": product.get('body_html', '').replace('<p>', '').replace('</p>', '')
+        #     },
+        #     "meta_keywords": product.get('tags', '') if product.get('tags') else [],
+        #     "discount": 0  # 根据业务需求可以计算折扣
+        # }
+        # image=transformed['image_url']
+        # # 后缀
+        # extension = image.split('.')[-1][0:3]
+        # print("2222",extension)
+        # body = {
+        #     "url": image,
+        #     "extension": extension
+        # }
+        # res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+        #                     json=body)
+        # print("20002202020",res.status_code,body)
+        # if res.status_code == 500:
             
-            transformed['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
-        elif res.status_code == 200:
-            print('res.text',res.text)
-            transformed['image_url'] = res.text
-        print(transformed)
-        transformed_products.append(transformed)
+        #     transformed['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+        # elif res.status_code == 200:
+        #     print('res.text',res.text)
+        #     transformed['image_url'] = res.text
+        # print(transformed)
+
+        # 变体的图片
+        variants = product.get('variants', [])
+        upload_variants=[]
+        for variant in variants:
+            extension = variant['featured_image']['src'].split('.')[-1][0:3]
+            print("2222",extension)
+            body = {
+                "url": variant['featured_image']['src'],
+                "extension": extension
+            }
+            res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+                                json=body)
+            print("20002202020",res.status_code,body)
+            if res.status_code == 500:
+                variant['featured_image']['src'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+                # product["images"][0]['image_url'] = 'https://starsnet-production.oss-cn-hongkong.aliyuncs.com/png/4fb86ec5-2b42-4824-8c05-0daa07644edf.png'
+            elif res.status_code == 200:
+                print('res.text',res.text)
+                variant['featured_image']['src'] = res.text
+            
+            upload_variants.append(variant)
+        # print(transformed)
+        product['variants'] = upload_variants
+        
+        transformed_products.append(product)
     
     return transformed_products
 
