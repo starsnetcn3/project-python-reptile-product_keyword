@@ -387,6 +387,7 @@ def create_headers(token=None):
     }
 
 
+
 def insert_data_shopify(data,markup,token,base_url):
     """插入或更新数据"""
     for product_item in data:
@@ -426,7 +427,7 @@ def insert_data_shopify(data,markup,token,base_url):
                         "cn": product_item["body_html"]
                     },
                     "status": "ACTIVE",
-                    "shopify_link": "",
+                    "shopify_link": "https://www.tentree.com/products/"+product_item["handle"],
                     "images": [item["src"] for item in product_item["images"]]
                 },
                 headers=create_headers(token)
@@ -460,7 +461,6 @@ def insert_data_shopify(data,markup,token,base_url):
                         },
                         "price": float(float(variant_item["price"])*(1 + markup)),
                         "status": "ACTIVE",
-                        "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
                     },
                     headers=create_headers(token)
@@ -501,7 +501,7 @@ def insert_data_shopify(data,markup,token,base_url):
                         "cn": product_item["body_html"]
                     },
                     "status": "ACTIVE",
-                    "shopify_link": "",
+                    "shopify_link": "https://www.tentree.com/products/"+product_item["handle"],
                     "images": [item["src"] for item in product_item["images"]]
                 },
                 headers=create_headers(token)
@@ -543,7 +543,6 @@ def insert_data_shopify(data,markup,token,base_url):
                         },
                         "price": float(float(variant_item["price"])*(1 + markup)),
                         "status": "ACTIVE",
-                        "shopify_link": "",
                         "images": [variant_item.get("featured_image", {}).get("src")]
                     },
                     headers=create_headers(token)
@@ -645,7 +644,7 @@ def insert_data_shopline(data,markup,token,base_url):
                         "cn": product_item["description"]["en"]
                     },
                     "status": "ACTIVE",
-                    "shopify_link": "",
+                    "shopify_link": "https://www.rngwine.com/products/"+format_string(product_item["title"]["en"]),
                     "images": [product_item["image_url"]]
                 },
                 headers=create_headers(token)
@@ -679,7 +678,6 @@ def insert_data_shopline(data,markup,token,base_url):
                         },
                         "price": float(variant_item["price"]*(1 + markup)),
                         "status": "ACTIVE",
-                        "shopify_link": "",
                         "images": [product_item["image_url"]]
                     },
                     headers=create_headers(token)
@@ -721,7 +719,7 @@ def insert_data_shopline(data,markup,token,base_url):
                         "cn": product_item["description"]["en"]
                     },
                     "status": "ACTIVE",
-                    "shopify_link": "",
+                    "shopify_link": "https://www.rngwine.com/products/"+format_string(product_item["title"]["en"]),
                     "images": [product_item["image_url"]]
                 },
                 headers=create_headers(token)
@@ -763,7 +761,6 @@ def insert_data_shopline(data,markup,token,base_url):
                         },
                         "price": float(variant_item["price"]*(1 + markup)),
                         "status": "ACTIVE",
-                        "shopify_link": "",
                         "images": [product_item["image_url"]]
                     },
                     headers=create_headers(token)
@@ -825,6 +822,13 @@ def insert_data_shopline(data,markup,token,base_url):
             json={"targetIds": delete_product_variant_id_list}
         )
 
+# shopline title text format
+def format_string(input_string):
+    # 将字符串转换为小写
+    lower_string = input_string.lower()
+    # 使用连字符连接
+    formatted_string = lower_string.replace(" ", "-")
+    return formatted_string
 
 # 插入数据库 end
 
@@ -865,9 +869,9 @@ async def loop_execute_sources():
 # 定时任务 end
 
 def main():
-    interval = 60 * 10  # 每隔10秒获取一次数据
-    start_timer(interval)
-    # asyncio.run(loop_execute_sources())
+    # interval = 60 * 10  # 每隔10秒获取一次数据
+    # start_timer(interval)
+    asyncio.run(loop_execute_sources())
 
     # token = login("http://127.0.0.1:3008/auth/login")
     # print("token",token)
