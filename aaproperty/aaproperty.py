@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.mongo_connection import MongoDB
 
 # 连接到 MongoDB
-mongo_db = MongoDB('mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false', 'test_auction')
+mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
 
 def clean_property_address(text):
     """
@@ -39,18 +39,18 @@ def clean_property_address(text):
     cleaned_text = cleaned_text.replace('()', '').replace('（）', '')
     
     return cleaned_text
-def safe_insert_user(collection_name,filed,user_data):
+def safe_insert_user(collection_name,filed,field2,user_data):
         # 先查询是否已存在
         existing = mongo_db.find_one(
             collection_name,
-            {filed: user_data[filed]}  # 按username查重
+            {filed: user_data[filed],field2: user_data[field2]}  # 按username查重
         )
-        
+        # print("existing",existing.get('auction_id'))
         if existing:
             print(f"用户已存在，跳过插入")
-            return False
+            return existing
         else:
-            return True
+            return False
 
 def format_time_str_2(time_str):
     """
@@ -96,7 +96,7 @@ def scrape_aa_property(url,bid):
         print("tanle",len(table.find_all('tr')))
          # 提取数据
         data=[]
-        for row in table.find_all('tr')[7:-2]:  # 跳过表头
+        for row in table.find_all('tr')[-2:-1]:  # 跳过表头
             cols = row.find_all('td')
             a_tag = cols[2].find('a')
             href = a_tag['href'] if a_tag else ''
@@ -160,12 +160,16 @@ def handle_data():
                 'company':company
             }
             print("data",data)
-            flag = safe_insert_user('auction','time',data)
+            flag = safe_insert_user('auction','time','company',data)
+            # company_flag = safe_insert_user('auction','company',data)
             print("flag11111",flag)
             inserted_id=""
-            if flag:
+            if not flag:
                 inserted_id = mongo_db.insert_data('auction', data)
                 print("Inserted document ID:", inserted_id)
+            else:
+                print("company_flag",flag.get('_id'))
+                inserted_id = flag.get('_id')
         else:
             print("No match found.")
 
@@ -192,9 +196,11 @@ def handle_data():
             print("colums",cols)
             row_data['property_address'] = clean_property_address(cols.get('property_address').strip().replace('\n', '').replace('\t', '').replace('\r', ''))
             # 用property_address来判断数据库是不是有
-            wuye_flag = safe_insert_user('auction_lots','property_address',row_data)
+            print("wuye_flag1111",row_data)
+            # 应该通过这个来判断  auction_id
+            wuye_flag = safe_insert_user('auction_lots','property_address','auction_id',row_data)
             print("wuye_flag",wuye_flag)
-            if wuye_flag:
+            if not wuye_flag:
                 row_data['serial_number'] = cols.get('serial_number').strip().replace('\n', '').replace('\t', '').replace('\r', '')
                 row_data['use'] = cols.get('use').strip().replace('\n', '').replace('\t', '').replace('\r', '')
                 row_data['situation'] = cols.get('situation').strip().replace('\n', '').replace('\t', '').replace('\r', '')

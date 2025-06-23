@@ -1,31 +1,36 @@
+import ssl
+import urllib3
 import requests
+import os
 
-image = 'https://www.chungsen.com.hk/attachment/2025-04/1745291701XghkX.jpg'  
-extension = image.split('.')[-1][:3]
-# if extension == 'jpe':
-extension = 'jpg'
 
-print("2222", extension)
+img_url = "https://www.chungsen.com.hk/attachment/2025-06/1748830671aIcck.jpg"
 
-body = {
-    "url": image,
-    "extension": extension
-}
+# Create less strict SSL context
+ctx = ssl.create_default_context()
+ctx.set_ciphers("DEFAULT@SECLEVEL=1")
 
-try:
-    res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development", json=body)
-    print("20002202020", res)
+# Fetch image
+http = urllib3.PoolManager(ssl_context=ctx)
+response = http.request("GET", img_url)
 
-    if res.status_code == 200:
-        print("20002202020", res.text)
+# Save image locally if successful
+if response.status == 200:
+    with open("temp.jpg", "wb") as f:
+        f.write(response.data)
+        print("Image downloaded.")
+else:
+    raise Exception(f"Failed to download image: status {response.status}")
+
+upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
+
+with open("temp.jpg", "rb") as f:
+    files = {"file": f.read()}
+    response = requests.post(upload_url, files=files)
+
+    if response.ok:
+        print("Upload successful:", response.text)
     else:
-        print(f"Error: Received status code {res.status_code}. Response: {res.text}")
+        print("Upload failed:", response.status_code, response.text)
 
-except requests.exceptions.HTTPError as http_err:
-    print(f"HTTP error occurred: {http_err}")
-except requests.exceptions.ConnectionError as conn_err:
-    print(f"Connection error occurred: {conn_err}")
-except requests.exceptions.Timeout as timeout_err:
-    print(f"Timeout error occurred: {timeout_err}")
-except requests.exceptions.RequestException as req_err:
-    print(f"An error occurred: {req_err}")
+os.remove("temp.jpg")
