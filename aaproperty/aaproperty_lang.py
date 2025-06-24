@@ -98,7 +98,7 @@ def scrape_aa_property(url,bid):
         print("tanle",len(table.find_all('tr')))
          # 提取数据
         data=[]
-        for row in table.find_all('tr')[-2:-1]:  # 跳过表头
+        for row in table.find_all('tr')[7:-1]:  # 跳过表头
             cols = row.find_all('td')
             a_tag = cols[2].find('a')
             href = a_tag['href'] if a_tag else ''
