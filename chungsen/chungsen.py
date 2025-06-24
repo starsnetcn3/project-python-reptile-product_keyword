@@ -223,9 +223,9 @@ def handle_data():
                 response = browser_requests.get(detail_url)
                 soup = BeautifulSoup(response.text, 'html.parser')
                 iframes = soup.find('iframe')
-                if iframes.get('src'):
-                    row_data['google_link']=iframes.get('src')
-
+                # 判断 iframes 是否存在且包含 'src' 属性
+                if iframes and iframes.get('src'):
+                    row_data['google_link'] = iframes.get('src')
                 print("iframes",iframes)
                 div_img = soup.select('.product-galleryslider a')
                 print("222222222",div_img)
