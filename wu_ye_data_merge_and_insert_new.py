@@ -2,6 +2,7 @@ import json
 import os
 import requests
 from opencc import OpenCC
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 繁中 转 简中
 cc = OpenCC('t2s')
@@ -81,38 +82,49 @@ def merge(type):
     else:
         print(f"Unknown type: {type}")
 
+def fetch_district(property, url):
+    address = property.get('property_address', {}).get('zh')
+    if address:
+        full_url = url + address
+        print("拼接的 URL:", full_url)
+        try:
+            response = requests.get(full_url, timeout=5)
+            if response.status_code == 200:
+                if len(response.json()):
+                    district = {"en": response.json()[0]['districtEN'], "zh": response.json()[0]['districtZH']}
+                else:
+                    district = {"en": "", "zh": "", "cn": ""}
+                print(district)
+                property["district"] = district
+            else:
+                property["district"] = {"en": "", "zh": ""}
+        except Exception as e:
+            print(f"请求失败: {e}")
+            property["district"] = {"en": "", "zh": ""}
+    return property
+
 def getAddressDistrict(mergeData):
-    # url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
-    # for property in mergeData:
-    #     # 假设 property 是一个字典，包含 'property_address' 键
-    #     address = property.get('property_address', {}).get('zh')
-    #     if address:
-    #         full_url = url + address
-    #         print("拼接的 URL:", full_url)
-    #         response = requests.get(full_url)
-    #         if response.status_code == 200:
-    #             if len(response.json()):
-    #                 district = {"en": response.json()[0]['districtEN'], "zh": response.json()[0]['districtZH']  }
-    #             else:
-    #                 district = {"en": "", "zh": "", "cn": ""  }
-    #             print(district)
-    #             property["district"] = district 
-    #         else:
-    #             property["district"] = {"en": "", "zh": ""}
+    url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(fetch_district, property, url) for property in mergeData]
+        for future in as_completed(futures):
+            pass  # 结果已写回 property，无需收集
     addCnLang(mergeData)
 
+def process_cn_lang(property):
+    property['property_address']['cn'] = cc.convert(property['property_address']['zh'])
+    property['use']['cn'] = cc.convert(property['use']['zh'])
+    property['viewing_time']['cn'] = cc.convert(property['viewing_time']['zh'])
+    property['situation']['cn'] = cc.convert(property['situation']['zh'])
+    property['district']['cn'] = cc.convert(property['district']['zh'])
+    for contact in property['contact_person']:
+        contact['name']['cn'] = contact['name']['zh']
+    return property
+
 def addCnLang(mergeData):
-    for property in mergeData:
-        property['property_address']['cn'] = cc.convert(property['property_address']['zh'])
-        property['use']['cn'] = cc.convert(property['use']['zh'])
-        property['viewing_time']['cn'] = cc.convert(property['viewing_time']['zh'])
-        property['viewing_time']['cn'] = cc.convert(property['viewing_time']['zh'])
-        property['situation']['cn'] = cc.convert(property['situation']['zh'])
-        # property['district']['cn'] = cc.convert(property['district']['zh'])
-        for contact in property['contact_person']:
-            contact['name']['cn'] = contact['name']['zh']
-    
-    json_filename = 'wu_ye_json/merge/merge_detail.json'
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        list(executor.map(process_cn_lang, mergeData))
+    json_filename = 'wu_ye_json/merge/merge_detail_new.json'
     # 检查文件是否存在，存在则读取原有内容
     if os.path.exists(json_filename):
         with open(json_filename, 'r', encoding='utf-8') as json_file:
@@ -127,7 +139,7 @@ def addCnLang(mergeData):
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(all_data, json_file, ensure_ascii=False, indent=4)
 
-    print("数据合并完成, 路径: wu_ye_json/merge/merge_detail.json")
+    print("数据合并完成, 路径: wu_ye_json/merge/merge_detail_new.json")
 
 def main():
     merge("mwal")

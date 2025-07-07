@@ -12,7 +12,7 @@ from db.mongo_connection import MongoDB
 
 # 连接到 MongoDB
 # mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
-mongo_db = MongoDB('mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin', 'wu_ye')
+mongo_db = MongoDB('mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin', 'wu_ye_new')
 
 
 def clean_property_address(text):
@@ -162,6 +162,7 @@ def handle_data():
                 'company':{"en": company, "zh": company}
             }
             print("data",data)
+            
             flag = safe_insert_user('auction','time','company',data)
             # company_flag = safe_insert_user('auction','company',data)
             print("flag11111",flag)
