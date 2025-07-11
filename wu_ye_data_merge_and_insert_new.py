@@ -102,6 +102,8 @@ def fetch_district(property, url):
             print(f"请求失败: {e}")
             property["district"] = {"en": "", "zh": ""}
     return property
+    property["district"] = {"en": "", "zh": ""}
+    return property
 
 def getAddressDistrict(mergeData):
     url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="

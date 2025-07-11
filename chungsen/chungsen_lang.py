@@ -169,20 +169,22 @@ def handle_data(lang):
     company = "忠誠集團"
     data = {
         'time': time,
-        'address': {"en": address, "zh": address},
-        'company': {"en": company, "zh": company}
+        'address':{"en": address, "zh": address},
+        'company':{"en": company, "zh": company},
+        "pa_chong_type": 'chungsen',
     }
     print("data", data)
     flag = None
-    flag = safe_insert_user('auction','time','company',data)
-    print("flag11111",flag)
     inserted_id=''
-    if not flag:
-         inserted_id = mongo_db.insert_data('auction', data)
-         print("Inserted document ID:", inserted_id)
-    else:
-        print("company_flag",flag.get('_id'))
-        inserted_id = flag.get('_id')
+    if lang == 'tc':
+        flag = safe_insert_user('auction','time','company',data)
+        print("flag11111",flag)
+        if not flag:
+            inserted_id = mongo_db.insert_data('auction', data)
+            print("Inserted document ID:", inserted_id)
+        else:
+            print("company_flag",flag.get('_id'))
+            inserted_id = flag.get('_id')
     colums = json_data['data']
     for cols in colums:
         # 创建一个字典来存储每一行的数据
@@ -229,86 +231,86 @@ def handle_data(lang):
         div_img = soup.select('.product-galleryslider a')
         print("222222222", div_img)
         # # 提取所有 src 属性
-        if lang == 'tc':
-            img_srcs = [img['href'].replace("../", "", 1) for img in div_img if img.get('href') and img.get('href').replace("../", "", 1)]
-            for image in img_srcs[1:]:
-                imgage_url = 'https://www.chungsen.com.hk/' + image
-                # Create less strict SSL context
-                ctx = ssl.create_default_context()
-                ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        # if lang == 'tc':
+        #     img_srcs = [img['href'].replace("../", "", 1) for img in div_img if img.get('href') and img.get('href').replace("../", "", 1)]
+        #     for image in img_srcs[1:]:
+        #         imgage_url = 'https://www.chungsen.com.hk/' + image
+        #         # Create less strict SSL context
+        #         ctx = ssl.create_default_context()
+        #         ctx.set_ciphers("DEFAULT@SECLEVEL=1")
 
-                # Fetch image
-                http = urllib3.PoolManager(ssl_context=ctx)
-                response = http.request("GET", imgage_url)
+        #         # Fetch image
+        #         http = urllib3.PoolManager(ssl_context=ctx)
+        #         response = http.request("GET", imgage_url)
 
-                # Save image locally if successful
-                if response.status == 200:
-                    with open("temp.jpg", "wb") as f:
-                        f.write(response.data)
-                        print("Image downloaded.")
-                else:
-                    raise Exception(f"Failed to download image: status {response.status}")
+        #         # Save image locally if successful
+        #         if response.status == 200:
+        #             with open("temp.jpg", "wb") as f:
+        #                 f.write(response.data)
+        #                 print("Image downloaded.")
+        #         else:
+        #             raise Exception(f"Failed to download image: status {response.status}")
 
-                upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
+        #         upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
 
-                with open("temp.jpg", "rb") as f:
-                    files = {"file": f.read()}
-                    response = requests.post(upload_url, files=files)
+        #         with open("temp.jpg", "rb") as f:
+        #             files = {"file": f.read()}
+        #             response = requests.post(upload_url, files=files)
 
-                    if response.ok:
-                        print("Upload successful:", response.text)
-                        row_data['image'].append(response.text)
-                    else:
-                        print("Upload failed:", response.status_code, response.text)
+        #             if response.ok:
+        #                 print("Upload successful:", response.text)
+        #                 row_data['image'].append(response.text)
+        #             else:
+        #                 print("Upload failed:", response.status_code, response.text)
 
-                os.remove("temp.jpg")
-                print("222222222", imgage_url)
+        #         os.remove("temp.jpg")
+        #         print("222222222", imgage_url)
         
-        # 平面图
-        floor_plan_element = soup.select('a.fancy_floor_plan')
-        print("floor_plan_element: ", floor_plan_element)
-        floor_plan_srcs = []
-        if floor_plan_element:
-            # 提取 href 属性并处理
-            floor_plan_srcs = [
-                img['href'].replace("../", "", 1) 
-                for img in floor_plan_element 
-                if img.get('href')  # 确保 href 存在
-            ]
-        print("floor_plan_srcs: ", floor_plan_srcs)
-        if lang == 'tc':
-            for image in floor_plan_srcs:
-                imgage_url = 'https://www.chungsen.com.hk/' + image
-                # Create less strict SSL context
-                ctx = ssl.create_default_context()
-                ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        # # 平面图
+        # floor_plan_element = soup.select('a.fancy_floor_plan')
+        # print("floor_plan_element: ", floor_plan_element)
+        # floor_plan_srcs = []
+        # if floor_plan_element:
+        #     # 提取 href 属性并处理
+        #     floor_plan_srcs = [
+        #         img['href'].replace("../", "", 1) 
+        #         for img in floor_plan_element 
+        #         if img.get('href')  # 确保 href 存在
+        #     ]
+        # print("floor_plan_srcs: ", floor_plan_srcs)
+        # if lang == 'tc':
+        #     for image in floor_plan_srcs:
+        #         imgage_url = 'https://www.chungsen.com.hk/' + image
+        #         # Create less strict SSL context
+        #         ctx = ssl.create_default_context()
+        #         ctx.set_ciphers("DEFAULT@SECLEVEL=1")
 
-                # Fetch image
-                http = urllib3.PoolManager(ssl_context=ctx)
-                response = http.request("GET", imgage_url)
+        #         # Fetch image
+        #         http = urllib3.PoolManager(ssl_context=ctx)
+        #         response = http.request("GET", imgage_url)
 
-                # Save image locally if successful
-                if response.status == 200:
-                    with open("temp.jpg", "wb") as f:
-                        f.write(response.data)
-                        print("Image downloaded.")
-                else:
-                    raise Exception(f"Failed to download image: status {response.status}")
+        #         # Save image locally if successful
+        #         if response.status == 200:
+        #             with open("temp.jpg", "wb") as f:
+        #                 f.write(response.data)
+        #                 print("Image downloaded.")
+        #         else:
+        #             raise Exception(f"Failed to download image: status {response.status}")
 
-                upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
+        #         upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
 
-                with open("temp.jpg", "rb") as f:
-                    files = {"file": f.read()}
-                    response = requests.post(upload_url, files=files)
+        #         with open("temp.jpg", "rb") as f:
+        #             files = {"file": f.read()}
+        #             response = requests.post(upload_url, files=files)
 
-                    if response.ok:
-                        print("Upload successful:", response.text)
-                        row_data['floor_plans'].append(response.text)
-                    else:
-                        print("Upload failed:", response.status_code, response.text)
+        #             if response.ok:
+        #                 print("Upload successful:", response.text)
+        #                 row_data['floor_plans'].append(response.text)
+        #             else:
+        #                 print("Upload failed:", response.status_code, response.text)
 
-                os.remove("temp.jpg")
-                print("floor_plan_url: ", imgage_url)
+        #         os.remove("temp.jpg")
+        #         print("floor_plan_url: ", imgage_url)
 
         building_area = cols.get('building_area').strip().replace('\n', '').replace('\t', '').replace('\r', '')
         saleable_area = cols.get('saleable_area').strip().replace('\n', '').replace('\t', '').replace('\r', '')

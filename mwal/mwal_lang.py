@@ -184,20 +184,22 @@ def handle_data(lang):
         data = {
                 'time': time,
                 'address':{"en": address, "zh": address},
-                'company':{"en": company, "zh": company}
+                'company':{"en": company, "zh": company},
+                "pa_chong_type": 'mwal',
         }
         print("data",data)
         flag = None
-        flag = safe_insert_user('auction','time','company',data)
-        # company_flag = safe_insert_user('auction','company',data)
-        print("flag11111",flag)
         inserted_id=''
-        if not flag:
-            inserted_id = mongo_db.insert_data('auction', data)
-            print("Inserted document ID:", inserted_id)
-        else:
-            print("company_flag",flag.get('_id'))
-            inserted_id = flag.get('_id')
+        if lang == 'tc':
+            flag = safe_insert_user('auction','time','company',data)
+            # company_flag = safe_insert_user('auction','company',data)
+            print("flag11111",flag)
+            if not flag:
+                inserted_id = mongo_db.insert_data('auction', data)
+                print("Inserted document ID:", inserted_id)
+            else:
+                print("company_flag",flag.get('_id'))
+                inserted_id = flag.get('_id')
         colums=json_data['data']
         for cols in colums:
                 # 创建一个字典来存储每一行的数据
@@ -234,6 +236,7 @@ def handle_data(lang):
                 # 去抓取详情页面
                 detail_id= cols.get('a_link')
                 detail_url =f'http://mwal.com.hk/tc/{detail_id}'
+                print("detail_url: ", detail_url)
                 # 存一个url用来前端跳转
                 row_data['detail_url']=detail_url
                 # response = requests.get(detail_url)

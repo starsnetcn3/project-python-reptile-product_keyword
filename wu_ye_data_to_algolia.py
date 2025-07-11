@@ -3,7 +3,7 @@ import os
 
 
 def main():
-    with open("wu_ye_json/merge/wu_ye.auction_lots.json", "r", encoding="utf-8") as f2:
+    with open("wu_ye_json/merge/wu_ye_new.auction_lots.json", "r", encoding="utf-8") as f2:
         mergeData = json.load(f2)
     for property in mergeData:
         property['objectID'] = property['_id']['$oid']

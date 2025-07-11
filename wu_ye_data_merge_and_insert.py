@@ -82,23 +82,23 @@ def merge(type):
         print(f"Unknown type: {type}")
 
 def getAddressDistrict(mergeData):
-    # url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
-    # for property in mergeData:
-    #     # 假设 property 是一个字典，包含 'property_address' 键
-    #     address = property.get('property_address', {}).get('zh')
-    #     if address:
-    #         full_url = url + address
-    #         print("拼接的 URL:", full_url)
-    #         response = requests.get(full_url)
-    #         if response.status_code == 200:
-    #             if len(response.json()):
-    #                 district = {"en": response.json()[0]['districtEN'], "zh": response.json()[0]['districtZH']  }
-    #             else:
-    #                 district = {"en": "", "zh": "", "cn": ""  }
-    #             print(district)
-    #             property["district"] = district 
-    #         else:
-    #             property["district"] = {"en": "", "zh": ""}
+    url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
+    for property in mergeData:
+        # 假设 property 是一个字典，包含 'property_address' 键
+        address = property.get('property_address', {}).get('zh')
+        if address:
+            full_url = url + address
+            print("拼接的 URL:", full_url)
+            response = requests.get(full_url)
+            if response.status_code == 200:
+                if len(response.json()):
+                    district = {"en": response.json()[0]['districtEN'], "zh": response.json()[0]['districtZH']  }
+                else:
+                    district = {"en": "", "zh": "", "cn": ""  }
+                print(district)
+                property["district"] = district 
+            else:
+                property["district"] = {"en": "", "zh": ""}
     addCnLang(mergeData)
 
 def addCnLang(mergeData):

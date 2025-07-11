@@ -159,7 +159,8 @@ def handle_data():
             data = {
                 'time': time,
                 'address':{"en": address, "zh": address},
-                'company':{"en": company, "zh": company}
+                'company':{"en": company, "zh": company},
+                "pa_chong_type": 'aaproperty',
             }
             print("data",data)
             
@@ -239,35 +240,35 @@ def handle_data():
                 table = soup.find_all('table')
                 img_all = table[5].find_all('img')
                 images_without_title = [img for img in img_all if not img.has_attr('title')]
-                # 拿到所有的图片之后开始遍历
-                print ("soup22222222",images_without_title)
-                if len(images_without_title):
-                    for image in images_without_title[1:]:
-                        extension = image['src'].split('.')[-1][0:3]
-                        print("2222",extension)
-                        imgage_url=' https://www.aaproperty.com.hk/aa/'+ image['src']
-                        body = {
-                            "url": imgage_url,
-                            "extension": extension
-                        }
-                        res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
-                                                    json=body)
-                        print("20002202020",res.status_code)
-                        if res.status_code == 200:
-                            row_data['image'].append(res.text)
-                            print("20002202020",row_data['image'])
+                # # 拿到所有的图片之后开始遍历
+                # print ("soup22222222",images_without_title)
+                # if len(images_without_title):
+                #     for image in images_without_title[1:]:
+                #         extension = image['src'].split('.')[-1][0:3]
+                #         print("2222",extension)
+                #         imgage_url=' https://www.aaproperty.com.hk/aa/'+ image['src']
+                #         body = {
+                #             "url": imgage_url,
+                #             "extension": extension
+                #         }
+                #         res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+                #                                     json=body)
+                #         print("20002202020",res.status_code)
+                #         if res.status_code == 200:
+                #             row_data['image'].append(res.text)
+                #             print("20002202020",row_data['image'])
 
                 
-                # 平面图
-                floor_plan_element = soup.find('a', target='floorplan', href=True)
-                if floor_plan_element:
-                    floor_plan_href = "https://www.aaproperty.com.hk/aa/" + floor_plan_element['href']
-                    print("floor_plan_href: ", floor_plan_href)
-                    body = {"url": floor_plan_href,"extension": extension}
-                    res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",json=body)
-                    if res.status_code == 200:
-                        row_data['floor_plans'].append(res.text)
-                        print("floor_plans:",row_data['floor_plans'])
+                # # 平面图
+                # floor_plan_element = soup.find('a', target='floorplan', href=True)
+                # if floor_plan_element:
+                #     floor_plan_href = "https://www.aaproperty.com.hk/aa/" + floor_plan_element['href']
+                #     print("floor_plan_href: ", floor_plan_href)
+                #     body = {"url": floor_plan_href,"extension": extension}
+                #     res = requests.post("https://file.starsnet.com.hk/api/upload/bucket-by-url/development",json=body)
+                #     if res.status_code == 200:
+                #         row_data['floor_plans'].append(res.text)
+                #         print("floor_plans:",row_data['floor_plans'])
 
                 # 处理面积字段
                 area_text = cols.get('area').strip().replace('\n', '').replace('\t', '').replace('\r', '')
