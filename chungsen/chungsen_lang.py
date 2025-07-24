@@ -10,6 +10,7 @@ import requests
 import os
 import json
 from datetime import datetime
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -17,7 +18,9 @@ from db.mongo_connection import MongoDB
 
 # 连接到 MongoDB
 # mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
-mongo_db = MongoDB('mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin', 'wu_ye_new')
+mongo_db = MongoDB(
+    "mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin", "wu_ye_new"
+)
 
 
 def clean_property_address(text):
@@ -28,36 +31,39 @@ def clean_property_address(text):
     """
     # 定义匹配物业编号的正则表达式模式（覆盖所有格式）
     patterns = [
-        r'物業編號\s*[:：]?\s*[A-Z0-9]+',  # 匹配中文"物业编号"及各种符号
-        r'\(物業編號:\s*\d+\)',          # 匹配括号内的编号
-        r'物業編號﹕[A-Z0-9]+',           # 匹配全角冒号情况
-        r'Property No\.?\s*[:：]?\s*\w+'  # 如果需要匹配英文格式
+        r"物業編號\s*[:：]?\s*[A-Z0-9]+",  # 匹配中文"物业编号"及各种符号
+        r"\(物業編號:\s*\d+\)",  # 匹配括号内的编号
+        r"物業編號﹕[A-Z0-9]+",  # 匹配全角冒号情况
+        r"Property No\.?\s*[:：]?\s*\w+",  # 如果需要匹配英文格式
     ]
-    
+
     # 逐个模式替换
     cleaned_text = text
     for pattern in patterns:
-        cleaned_text = re.sub(pattern, '', cleaned_text, flags=re.IGNORECASE)
-    
+        cleaned_text = re.sub(pattern, "", cleaned_text, flags=re.IGNORECASE)
+
     # 清理多余空格和换行
-    cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
-    
+    cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+
     # 处理可能残留的括号
-    cleaned_text = cleaned_text.replace('()', '').replace('（）', '')
-    
+    cleaned_text = cleaned_text.replace("()", "").replace("（）", "")
+
     return cleaned_text
-def safe_insert_user(collection_name,filed,field2,user_data):
-        # 先查询是否已存在
-        existing = mongo_db.find_one(
-            collection_name,
-            {filed: user_data[filed],field2: user_data[field2]}  # 按username查重
-        )
-        # print("existing",existing.get('auction_id'))
-        if existing:
-            print(f"用户已存在，跳过插入")
-            return existing
-        else:
-            return False
+
+
+def safe_insert_user(collection_name, filed, field2, user_data):
+    # 先查询是否已存在
+    existing = mongo_db.find_one(
+        collection_name,
+        {filed: user_data[filed], field2: user_data[field2]},  # 按username查重
+    )
+    # print("existing",existing.get('auction_id'))
+    if existing:
+        print(f"用户已存在，跳过插入")
+        return existing
+    else:
+        return False
+
 
 def format_time_str(time_str):
     """
@@ -65,79 +71,81 @@ def format_time_str(time_str):
     输出: "2025-06-11 PM 3:00"
     """
     # 提取日期和时间部分
-    date_part = re.search(r'(\d+/\d+/\d+)', time_str).group(1)
+    date_part = re.search(r"(\d+/\d+/\d+)", time_str).group(1)
     period = "PM" if "下午" in time_str else "AM"
-    time_part = re.search(r'[\d]+', time_str.split()[-1]).group()
-    
+    time_part = re.search(r"[\d]+", time_str.split()[-1]).group()
+
     # 解析日期 - 修正顺序为 日/月/年
-    day, month, year = map(int, date_part.split('/'))
-    
+    day, month, year = map(int, date_part.split("/"))
+
     # 格式化输出
     return f"{year}-{month:02d}-{day:02d} {period} {time_part}:00"
+
+
 def scrape_aa_property(url, cid, lang):
     # 设置请求头，模拟浏览器访问
     headers = {
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
-    
+
     try:
         # 发送HTTP请求
-        response = browser_requests.get(url, impersonate="chrome110")  # 模拟Chrome的SSL行为
+        response = browser_requests.get(
+            url, impersonate="chrome110"
+        )  # 模拟Chrome的SSL行为
         # response.raise_for_status()  # 检查请求是否成功
-        
-        # 使用BeautifulSoup解析HTML
-        soup = BeautifulSoup(response.text, 'html.parser')
 
-        auction_sub_title = soup.find('div', class_='auction_sub_title')
+        # 使用BeautifulSoup解析HTML
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        auction_sub_title = soup.find("div", class_="auction_sub_title")
         if auction_sub_title:
             print(auction_sub_title.text)
         else:
             print("No div with class 'auction_info' found.")
 
-        table = soup.find('table', class_='tb_auction')
+        table = soup.find("table", class_="tb_auction")
         print("tanle", table)
-        print("tanle", len(table.find_all('tr')))
+        print("tanle", len(table.find_all("tr")))
         #  # 提取数据
         data = []
-        for row in table.find_all('tr')[1:]:  # 跳过表头
-            cols = row.find_all('td')
-            a_tag = cols[1].find('a')
-            href = a_tag['href'] if a_tag else ''
+        for row in table.find_all("tr")[1:]:  # 跳过表头
+            cols = row.find_all("td")
+            a_tag = cols[1].find("a")
+            href = a_tag["href"] if a_tag else ""
 
             row_data = {
-                'image': '',
-                'serial_number': '',
-                'property_address': '',
-                'use': '',
-                'situation': '',
-                'price': '',
-                'viewing_time': '',
-                'contact_person': '',
-                'completion_year': '',
-                'building_area': '',
-                'saleable_area': '',
-                'a_link': '',
-                'google_link': '',
+                "image": "",
+                "serial_number": "",
+                "property_address": "",
+                "use": "",
+                "situation": "",
+                "price": "",
+                "viewing_time": "",
+                "contact_person": "",
+                "completion_year": "",
+                "building_area": "",
+                "saleable_area": "",
+                "a_link": "",
+                "google_link": "",
             }
-            row_data['serial_number'] = cols[0].text
-            row_data['property_address'] = cols[1].text
-            row_data['use'] = cols[2].text
-            row_data['building_area'] = cols[3].text  # 没有匹配时设置为空
-            row_data['saleable_area'] = cols[4].text  # 没有匹配时设置为空
-            row_data['price'] = cols[5].text
-            row_data['viewing_time'] = cols[6].text
-            row_data['contact_person'] = cols[7].text
-            row_data['a_link'] = href
+            row_data["serial_number"] = cols[0].text
+            row_data["property_address"] = cols[1].text
+            row_data["use"] = cols[2].text
+            row_data["building_area"] = cols[3].text  # 没有匹配时设置为空
+            row_data["saleable_area"] = cols[4].text  # 没有匹配时设置为空
+            row_data["price"] = cols[5].text
+            row_data["viewing_time"] = cols[6].text
+            row_data["contact_person"] = cols[7].text
+            row_data["a_link"] = href
             data.append(row_data)
         # 创建一个字典来保存数据
-        output_data = {
-            "data": data,
-            "paragraphs": auction_sub_title.text
-        }
+        output_data = {"data": data, "paragraphs": auction_sub_title.text}
 
         # 将数据写入 JSON 文件
-        json_filename = f'{lang}_chungsen.json'
-        with open(json_filename, 'w', encoding='utf-8') as json_file:
+        # json_filename = f"{lang}_chungsen.json"
+        json_filename = f"chungsen.json"
+        with open(json_filename, "w", encoding="utf-8") as json_file:
             json.dump(output_data, json_file, ensure_ascii=False, indent=4)
 
         print(f"数据已写入 {json_filename}")
@@ -145,202 +153,287 @@ def scrape_aa_property(url, cid, lang):
         print(f"抓取过程中发生错误: {e}")
         return None
 
+
 def handle_data(lang):
-    json_filename = f'{lang}_chungsen.json'
+    # json_filename = f"{lang}_chungsen.json"
+    json_filename = f"chungsen.json"
     # 读取 JSON 文件
-    with open(json_filename, 'r', encoding='utf-8') as json_file:
+    with open(json_filename, "r", encoding="utf-8") as json_file:
         json_data = json.load(json_file)
-    print("json_data['paragraphs']", json_data['paragraphs'])
-    time_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4} \(星期\w+\) 下午\d{1,2}時正)', json_data['paragraphs'])
-    address_match = re.search(r'(香港.+?室)', json_data['paragraphs'])
+    print("json_data['paragraphs']", json_data["paragraphs"])
+    time_match = re.search(
+        r"(\d{1,2}/\d{1,2}/\d{4} \(星期\w+\) 下午\d{1,2}時正)", json_data["paragraphs"]
+    )
+    address_match = re.search(r"(香港.+?室)", json_data["paragraphs"])
 
     if time_match:
         time = format_time_str(time_match.group(1))
     else:
-        time = ''
+        time = ""
 
     if address_match:
         address = address_match.group(1).strip()
     else:
-        address = ''
+        address = ""
 
     print("时间:", time)
     print("地址:", address)
     company = "忠誠集團"
     data = {
-        'time': time,
-        'address':{"en": address, "zh": address},
-        'company':{"en": company, "zh": company},
-        "pa_chong_type": 'chungsen',
+        "time": time,
+        "address": {"en": address, "zh": address},
+        "company": {"en": company, "zh": company},
     }
     print("data", data)
     flag = None
-    inserted_id=''
-    if lang == 'tc':
-        flag = safe_insert_user('auction','time','company',data)
-        print("flag11111",flag)
+    inserted_id = ""
+    if lang == "tc":
+        flag = safe_insert_user("auction", "time", "company", data)
+        print("flag11111", flag)
         if not flag:
-            inserted_id = mongo_db.insert_data('auction', data)
+            inserted_id = mongo_db.insert_data("auction", data)
             print("Inserted document ID:", inserted_id)
         else:
-            print("company_flag",flag.get('_id'))
-            inserted_id = flag.get('_id')
-    colums = json_data['data']
+            print("company_flag", flag.get("_id"))
+            inserted_id = flag.get("_id")
+    colums = json_data["data"]
     for cols in colums:
         # 创建一个字典来存储每一行的数据
         row_data = {
-            'image': [],
-            'serial_number': '',
-            'property_address': '',
-            'use': '',
-            'situation': '',
-            'price': 0,
-            'viewing_time': '',
-            'contact_person': {},
-            'completion_year': '',
-            'building_area': 0,
-            'saleable_area': 0,
-            'property_number': '',
+            "image": [],
+            "serial_number": "",
+            "property_address": "",
+            "use": "",
+            "situation": "",
+            "price": 0,
+            "viewing_time": "",
+            "contact_person": {},
+            "completion_year": "",
+            "building_area": 0,
+            "saleable_area": 0,
+            "property_number": "",
             # 'created_at': datetime.now(),
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'google_link': '',
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "google_link": "",
             # 'auction_id': inserted_id,
-            'auction_id': str(inserted_id),
-            'detail_url': '',
-            "floor_plans": []
+            "auction_id": str(inserted_id),
+            "detail_url": "",
+            "floor_plans": [],
         }
         print("colums", cols)
-        row_data['property_address'] = clean_property_address(cols.get('property_address').strip().replace('\n', '').replace('\t', '').replace('\r', ''))
+        row_data["property_address"] = clean_property_address(
+            cols.get("property_address")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
         # wuye_flag = safe_insert_user('auction_lots','property_address','auction_id',row_data)
         # print("wuye_flag",wuye_flag)
         # if not wuye_flag:
-        row_data['serial_number'] = cols.get('serial_number').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        row_data['use'] = cols.get('use').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        row_data['situation'] = cols.get('situation').strip().replace('\n', '').replace('\t', '').replace('\r', '')
+        row_data["serial_number"] = (
+            cols.get("serial_number")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        row_data["use"] = (
+            cols.get("use")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        row_data["situation"] = (
+            cols.get("situation")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
         # 去抓取详情页面
-        detail_id = cols.get('a_link')
-        detail_url = f'https://www.chungsen.com.hk/{lang}/{detail_id}'
-        row_data['detail_url'] = detail_url
+        detail_id = cols.get("a_link")
+        detail_url = f"https://www.chungsen.com.hk/{lang}/{detail_id}"
+        row_data["detail_url"] = detail_url
         response = browser_requests.get(detail_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        iframes = soup.find('iframe')
-        if iframes and iframes.get('src'):
-            row_data['google_link'] = iframes.get('src')
+        soup = BeautifulSoup(response.text, "html.parser")
+        iframes = soup.find("iframe")
+        if iframes and iframes.get("src"):
+            row_data["google_link"] = iframes.get("src")
 
         print("iframes", iframes)
-        div_img = soup.select('.product-galleryslider a')
+        div_img = soup.select(".product-galleryslider a")
         print("222222222", div_img)
         # # 提取所有 src 属性
-        # if lang == 'tc':
-        #     img_srcs = [img['href'].replace("../", "", 1) for img in div_img if img.get('href') and img.get('href').replace("../", "", 1)]
-        #     for image in img_srcs[1:]:
-        #         imgage_url = 'https://www.chungsen.com.hk/' + image
-        #         # Create less strict SSL context
-        #         ctx = ssl.create_default_context()
-        #         ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        if lang == "tc":
+            img_srcs = [
+                img["href"].replace("../", "", 1)
+                for img in div_img
+                if img.get("href") and img.get("href").replace("../", "", 1)
+            ]
+            for image in img_srcs[1:]:
+                try:
+                    imgage_url = "https://www.chungsen.com.hk/" + image
+                    # Create less strict SSL context
+                    ctx = ssl.create_default_context()
+                    ctx.set_ciphers("DEFAULT@SECLEVEL=1")
 
-        #         # Fetch image
-        #         http = urllib3.PoolManager(ssl_context=ctx)
-        #         response = http.request("GET", imgage_url)
+                    # Fetch image
+                    http = urllib3.PoolManager(ssl_context=ctx)
+                    response = http.request("GET", imgage_url)
 
-        #         # Save image locally if successful
-        #         if response.status == 200:
-        #             with open("temp.jpg", "wb") as f:
-        #                 f.write(response.data)
-        #                 print("Image downloaded.")
-        #         else:
-        #             raise Exception(f"Failed to download image: status {response.status}")
+                    # Save image locally if successful
+                    if response.status == 200:
+                        with open("temp.jpg", "wb") as f:
+                            f.write(response.data)
+                            print("Image downloaded.")
+                    else:
+                        raise Exception(
+                            f"Failed to download image: status {response.status}"
+                        )
 
-        #         upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
+                    upload_url = (
+                        "https://file.starsnet.com.hk/api/upload/bucket/development"
+                    )
 
-        #         with open("temp.jpg", "rb") as f:
-        #             files = {"file": f.read()}
-        #             response = requests.post(upload_url, files=files)
+                    with open("temp.jpg", "rb") as f:
+                        files = {"file": f.read()}
+                        response = requests.post(upload_url, files=files)
 
-        #             if response.ok:
-        #                 print("Upload successful:", response.text)
-        #                 row_data['image'].append(response.text)
-        #             else:
-        #                 print("Upload failed:", response.status_code, response.text)
+                        if response.ok:
+                            print("Upload successful:", response.text)
+                            row_data["image"].append(response.text)
+                        else:
+                            print("Upload failed:", response.status_code, response.text)
 
-        #         os.remove("temp.jpg")
-        #         print("222222222", imgage_url)
-        
-        # # 平面图
-        # floor_plan_element = soup.select('a.fancy_floor_plan')
-        # print("floor_plan_element: ", floor_plan_element)
-        # floor_plan_srcs = []
-        # if floor_plan_element:
-        #     # 提取 href 属性并处理
-        #     floor_plan_srcs = [
-        #         img['href'].replace("../", "", 1) 
-        #         for img in floor_plan_element 
-        #         if img.get('href')  # 确保 href 存在
-        #     ]
-        # print("floor_plan_srcs: ", floor_plan_srcs)
-        # if lang == 'tc':
-        #     for image in floor_plan_srcs:
-        #         imgage_url = 'https://www.chungsen.com.hk/' + image
-        #         # Create less strict SSL context
-        #         ctx = ssl.create_default_context()
-        #         ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+                    os.remove("temp.jpg")
+                    print("222222222", imgage_url)
+                except Exception as e:
+                    print("保存图片发生了错误:", str(e))
 
-        #         # Fetch image
-        #         http = urllib3.PoolManager(ssl_context=ctx)
-        #         response = http.request("GET", imgage_url)
+        # 平面图
+        floor_plan_element = soup.select("a.fancy_floor_plan")
+        print("floor_plan_element: ", floor_plan_element)
+        floor_plan_srcs = []
+        if floor_plan_element:
+            # 提取 href 属性并处理
+            floor_plan_srcs = [
+                img["href"].replace("../", "", 1)
+                for img in floor_plan_element
+                if img.get("href")  # 确保 href 存在
+            ]
+        print("floor_plan_srcs: ", floor_plan_srcs)
+        if lang == "tc":
+            for image in floor_plan_srcs:
+                try:
+                    imgage_url = "https://www.chungsen.com.hk/" + image
+                    # Create less strict SSL context
+                    ctx = ssl.create_default_context()
+                    ctx.set_ciphers("DEFAULT@SECLEVEL=1")
 
-        #         # Save image locally if successful
-        #         if response.status == 200:
-        #             with open("temp.jpg", "wb") as f:
-        #                 f.write(response.data)
-        #                 print("Image downloaded.")
-        #         else:
-        #             raise Exception(f"Failed to download image: status {response.status}")
+                    # Fetch image
+                    http = urllib3.PoolManager(ssl_context=ctx)
+                    response = http.request("GET", imgage_url)
 
-        #         upload_url = "https://file.starsnet.com.hk/api/upload/bucket/development"
+                    # Save image locally if successful
+                    if response.status == 200:
+                        with open("temp.jpg", "wb") as f:
+                            f.write(response.data)
+                            print("Image downloaded.")
+                    else:
+                        raise Exception(
+                            f"Failed to download image: status {response.status}"
+                        )
 
-        #         with open("temp.jpg", "rb") as f:
-        #             files = {"file": f.read()}
-        #             response = requests.post(upload_url, files=files)
+                    upload_url = (
+                        "https://file.starsnet.com.hk/api/upload/bucket/development"
+                    )
 
-        #             if response.ok:
-        #                 print("Upload successful:", response.text)
-        #                 row_data['floor_plans'].append(response.text)
-        #             else:
-        #                 print("Upload failed:", response.status_code, response.text)
+                    with open("temp.jpg", "rb") as f:
+                        files = {"file": f.read()}
+                        response = requests.post(upload_url, files=files)
 
-        #         os.remove("temp.jpg")
-        #         print("floor_plan_url: ", imgage_url)
+                        if response.ok:
+                            print("Upload successful:", response.text)
+                            row_data["floor_plans"].append(response.text)
+                        else:
+                            print("Upload failed:", response.status_code, response.text)
 
-        building_area = cols.get('building_area').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        saleable_area = cols.get('saleable_area').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        building_numbers = re.findall(r'(\d+)', building_area)
-        saleable_numbers = re.findall(r'(\d+)', saleable_area)
-        row_data['building_area'] = sum(int(num) for num in building_numbers)
-        row_data['saleable_area'] = sum(int(num) for num in saleable_numbers)
-        price = cols.get('price').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        price_matches = re.findall(r'(\d+)', price)
+                    os.remove("temp.jpg")
+                    print("floor_plan_url: ", imgage_url)
+                except Exception as e:
+                    print("保存平面图发生了错误:", str(e))
+
+        building_area = (
+            cols.get("building_area")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        saleable_area = (
+            cols.get("saleable_area")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        building_numbers = re.findall(r"(\d+)", building_area)
+        saleable_numbers = re.findall(r"(\d+)", saleable_area)
+        row_data["building_area"] = sum(int(num) for num in building_numbers)
+        row_data["saleable_area"] = sum(int(num) for num in saleable_numbers)
+        price = (
+            cols.get("price")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        price_matches = re.findall(r"(\d+)", price)
         prices = [int(price) for price in price_matches]
-        row_data['price'] = sum(prices) * 10000 if prices else 0
+        row_data["price"] = sum(prices) * 10000 if prices else 0
 
-        row_data['viewing_time'] = cols.get('viewing_time').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        contact_person = cols.get('contact_person').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        matches = re.findall(r'(\d{4}\s*\d{4}|\d{8})\s*([\u4e00-\u9fa5]+)', contact_person)
+        row_data["viewing_time"] = (
+            cols.get("viewing_time")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        contact_person = (
+            cols.get("contact_person")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        matches = re.findall(
+            r"(\d{4}\s*\d{4}|\d{8})\s*([\u4e00-\u9fa5]+)", contact_person
+        )
         print("matches", matches)
-        row_data['contact_person'] = [{"phone": phone.replace(" ", ""), "name": name} for phone, name in matches]
+        row_data["contact_person"] = [
+            {"phone": phone.replace(" ", ""), "name": name} for phone, name in matches
+        ]
 
-        row_data['completion_year'] = cols.get('completion_year').strip().replace('\n', '').replace('\t', '').replace('\r', '')
-        property_match = re.search(r'(\d+)$', row_data['property_address'])
+        row_data["completion_year"] = (
+            cols.get("completion_year")
+            .strip()
+            .replace("\n", "")
+            .replace("\t", "")
+            .replace("\r", "")
+        )
+        property_match = re.search(r"(\d+)$", row_data["property_address"])
         print("property_match", property_match)
-        row_data['property_number'] = property_match.group(1) if property_match else ''
+        row_data["property_number"] = property_match.group(1) if property_match else ""
         print("row_data", row_data)
         # product_id = mongo_db.insert_data('auction_lots', row_data)
         # print("Product document ID:", product_id)
-       
-        json_detail_filename = f'{lang}_chungsen_detail.json'
+
+        json_detail_filename = f"{lang}_chungsen_detail.json"
         # 检查文件是否存在
         if os.path.exists(json_detail_filename):
-            with open(json_detail_filename, 'r', encoding='utf-8') as json_file:
+            with open(json_detail_filename, "r", encoding="utf-8") as json_file:
                 try:
                     data_list = json.load(json_file)
                     if not isinstance(data_list, list):
@@ -351,22 +444,29 @@ def handle_data(lang):
             data_list = []
 
         data_list.append(row_data)
-        with open(json_detail_filename, 'w', encoding='utf-8') as json_file:
+        with open(json_detail_filename, "w", encoding="utf-8") as json_file:
             json.dump(data_list, json_file, ensure_ascii=False, indent=4)
 
         print(f"数据已追加到 {json_detail_filename}")
 
+
 if __name__ == "__main__":
     # 1. 获取所有cid
-    reesponse_data = browser_requests.get("https://www.chungsen.com.hk/en/auction.php?&wid=82&cid=651")
-    soup = BeautifulSoup(reesponse_data.text, 'html.parser')
-    select_element = soup.find('select', class_='form-select')
-    values = [option['value'] for option in select_element.find_all('option') if option.get('value', '').strip() != '']
+    reesponse_data = browser_requests.get(
+        "https://www.chungsen.com.hk/en/auction.php?&wid=82&cid=651"
+    )
+    soup = BeautifulSoup(reesponse_data.text, "html.parser")
+    select_element = soup.find("select", class_="form-select")
+    values = [
+        option["value"]
+        for option in select_element.find_all("option")
+        if option.get("value", "").strip() != ""
+    ]
 
     all_merged = []
     for cid in values:
         # 2. 分别抓取中英文
-        for lang in ['tc', 'en']:
-            url = f'https://www.chungsen.com.hk/{lang}/auction.php?&wid=82&cid={cid}'
-            auction_data = scrape_aa_property(url,cid,lang)
+        for lang in ["tc", "en"]:
+            url = f"https://www.chungsen.com.hk/{lang}/auction.php?&wid=82&cid={cid}"
+            auction_data = scrape_aa_property(url, cid, lang)
             handle_data(lang=lang)
