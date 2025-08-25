@@ -3,10 +3,13 @@ import os
 
 
 def main():
-    with open("wu_ye_json/merge/wu_ye_new.auction_lots.json", "r", encoding="utf-8") as f2:
+    with open("wu_ye_json/merge/auction_lots.json", "r", encoding="utf-8") as f2:
         mergeData = json.load(f2)
     for property in mergeData:
-        property['objectID'] = property['_id']['$oid']
+        if isinstance(property['_id'], dict) and '$oid' in property['_id']:
+            property['objectID'] = property['_id']['$oid']
+        else:
+            property['objectID'] = property['_id']
     # 检查文件是否存在，存在则读取原有内容
     if os.path.exists("wu_ye_json/merge/wu_ye.auction_algolia_lots.json"):
         with open("wu_ye_json/merge/wu_ye.auction_algolia_lots.json", 'r', encoding='utf-8') as json_file:

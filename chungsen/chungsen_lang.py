@@ -144,7 +144,7 @@ def scrape_aa_property(url, cid, lang):
 
         # 将数据写入 JSON 文件
         # json_filename = f"{lang}_chungsen.json"
-        json_filename = f"chungsen.json"
+        json_filename = f"wu_ye_json/chungsen.json"
         with open(json_filename, "w", encoding="utf-8") as json_file:
             json.dump(output_data, json_file, ensure_ascii=False, indent=4)
 
@@ -156,7 +156,7 @@ def scrape_aa_property(url, cid, lang):
 
 def handle_data(lang):
     # json_filename = f"{lang}_chungsen.json"
-    json_filename = f"chungsen.json"
+    json_filename = f"wu_ye_json/chungsen.json"
     # 读取 JSON 文件
     with open(json_filename, "r", encoding="utf-8") as json_file:
         json_data = json.load(json_file)
@@ -430,7 +430,7 @@ def handle_data(lang):
         # product_id = mongo_db.insert_data('auction_lots', row_data)
         # print("Product document ID:", product_id)
 
-        json_detail_filename = f"{lang}_chungsen_detail.json"
+        json_detail_filename = f"wu_ye_json/{lang}_chungsen_detail.json"
         # 检查文件是否存在
         if os.path.exists(json_detail_filename):
             with open(json_detail_filename, "r", encoding="utf-8") as json_file:
@@ -450,7 +450,7 @@ def handle_data(lang):
         print(f"数据已追加到 {json_detail_filename}")
 
 
-if __name__ == "__main__":
+def main():
     # 1. 获取所有cid
     reesponse_data = browser_requests.get(
         "https://www.chungsen.com.hk/en/auction.php?&wid=82&cid=651"
@@ -470,3 +470,7 @@ if __name__ == "__main__":
             url = f"https://www.chungsen.com.hk/{lang}/auction.php?&wid=82&cid={cid}"
             auction_data = scrape_aa_property(url, cid, lang)
             handle_data(lang=lang)
+
+
+if __name__ == "__main__":
+    main()

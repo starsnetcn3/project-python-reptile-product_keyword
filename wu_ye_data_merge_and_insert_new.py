@@ -5,7 +5,8 @@ from opencc import OpenCC
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 繁中 转 简中
-cc = OpenCC('t2s')
+cc = OpenCC("t2s")
+
 
 def merge_zh_en_data(zh_list, en_list):
     """
@@ -28,27 +29,54 @@ def merge_zh_en_data(zh_list, en_list):
             # name 字段合并为字典
             contact["name"] = {
                 "zh": zh_contact.get("name", ""),
-                "en": en_contact.get("name", "") if en_contact.get("name", "") else zh_contact.get("name", "")
+                "en": (
+                    en_contact.get("name", "")
+                    if en_contact.get("name", "")
+                    else zh_contact.get("name", "")
+                ),
             }
             # 其它字段直接保留
             for k, v in zh_contact.items():
                 if k != "name":
                     contact[k] = v
             contact_person.append(contact)
+
         def fill_en(zh_val, en_val):
             return en_val if en_val else zh_val
+
         item = {
-            "property_address": {"zh": zh.get("property_address", ""), "en": fill_en(zh.get("property_address", ""), en.get("property_address", ""))},
-            "use": {"zh": zh.get("use", ""), "en": fill_en(zh.get("use", ""), en.get("use", ""))},
-            "situation": {"zh": zh.get("situation", ""), "en": fill_en(zh.get("situation", ""), en.get("situation", ""))},
-            "viewing_time": {"zh": zh.get("viewing_time", ""), "en": fill_en(zh.get("viewing_time", ""), en.get("viewing_time", ""))},
-            "contact_person": contact_person
+            "property_address": {
+                "zh": zh.get("property_address", ""),
+                "en": fill_en(
+                    zh.get("property_address", ""), en.get("property_address", "")
+                ),
+            },
+            "use": {
+                "zh": zh.get("use", ""),
+                "en": fill_en(zh.get("use", ""), en.get("use", "")),
+            },
+            "situation": {
+                "zh": zh.get("situation", ""),
+                "en": fill_en(zh.get("situation", ""), en.get("situation", "")),
+            },
+            "viewing_time": {
+                "zh": zh.get("viewing_time", ""),
+                "en": fill_en(zh.get("viewing_time", ""), en.get("viewing_time", "")),
+            },
+            "contact_person": contact_person,
         }
         for k, v in zh.items():
-            if k not in ["property_address", "use", "situation", "viewing_time", "contact_person"]:
+            if k not in [
+                "property_address",
+                "use",
+                "situation",
+                "viewing_time",
+                "contact_person",
+            ]:
                 item[k] = v
         mergeData.append(item)
     return mergeData
+
 
 def merge(type):
     if type == "aaproperty":
@@ -82,8 +110,9 @@ def merge(type):
     else:
         print(f"Unknown type: {type}")
 
+
 def fetch_district(property, url):
-    address = property.get('property_address', {}).get('zh')
+    address = property.get("property_address", {}).get("zh")
     if address:
         full_url = url + address
         print("拼接的 URL:", full_url)
@@ -91,7 +120,10 @@ def fetch_district(property, url):
             response = requests.get(full_url, timeout=5)
             if response.status_code == 200:
                 if len(response.json()):
-                    district = {"en": response.json()[0]['districtEN'], "zh": response.json()[0]['districtZH']}
+                    district = {
+                        "en": response.json()[0]["districtEN"],
+                        "zh": response.json()[0]["districtZH"],
+                    }
                 else:
                     district = {"en": "", "zh": "", "cn": ""}
                 print(district)
@@ -105,31 +137,36 @@ def fetch_district(property, url):
     property["district"] = {"en": "", "zh": ""}
     return property
 
+
 def getAddressDistrict(mergeData):
     url = "https://geodata.gov.hk/gs/api/v1.0.0/locationSearch?q="
     with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [executor.submit(fetch_district, property, url) for property in mergeData]
+        futures = [
+            executor.submit(fetch_district, property, url) for property in mergeData
+        ]
         for future in as_completed(futures):
             pass  # 结果已写回 property，无需收集
     addCnLang(mergeData)
 
+
 def process_cn_lang(property):
-    property['property_address']['cn'] = cc.convert(property['property_address']['zh'])
-    property['use']['cn'] = cc.convert(property['use']['zh'])
-    property['viewing_time']['cn'] = cc.convert(property['viewing_time']['zh'])
-    property['situation']['cn'] = cc.convert(property['situation']['zh'])
-    property['district']['cn'] = cc.convert(property['district']['zh'])
-    for contact in property['contact_person']:
-        contact['name']['cn'] = contact['name']['zh']
+    property["property_address"]["cn"] = cc.convert(property["property_address"]["zh"])
+    property["use"]["cn"] = cc.convert(property["use"]["zh"])
+    property["viewing_time"]["cn"] = cc.convert(property["viewing_time"]["zh"])
+    property["situation"]["cn"] = cc.convert(property["situation"]["zh"])
+    property["district"]["cn"] = cc.convert(property["district"]["zh"])
+    for contact in property["contact_person"]:
+        contact["name"]["cn"] = contact["name"]["zh"]
     return property
+
 
 def addCnLang(mergeData):
     with ThreadPoolExecutor(max_workers=10) as executor:
         list(executor.map(process_cn_lang, mergeData))
-    json_filename = 'wu_ye_json/merge/merge_detail_new.json'
+    json_filename = "wu_ye_json/merge/merge_detail_new.json"
     # 检查文件是否存在，存在则读取原有内容
     if os.path.exists(json_filename):
-        with open(json_filename, 'r', encoding='utf-8') as json_file:
+        with open(json_filename, "r", encoding="utf-8") as json_file:
             try:
                 old_data = json.load(json_file)
             except Exception:
@@ -138,19 +175,21 @@ def addCnLang(mergeData):
         old_data = []
     # 追加新数据
     all_data = old_data + mergeData
-    with open(json_filename, 'w', encoding='utf-8') as json_file:
+    with open(json_filename, "w", encoding="utf-8") as json_file:
         json.dump(all_data, json_file, ensure_ascii=False, indent=4)
 
     print("数据合并完成, 路径: wu_ye_json/merge/merge_detail_new.json")
 
+
 def main():
+    merge("aaproperty")
     merge("mwal")
     merge("chungsen")
-    merge("aaproperty")
 
     # with open("wu_ye_json/merge/merge_detail_backup.json", "r", encoding="utf-8") as f2:
     #     mergeData = json.load(f2)
     # addCnLang(mergeData=mergeData)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

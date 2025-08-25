@@ -142,7 +142,7 @@ def scrape_aa_property(url, bid):
         output_data = {"data": data, "optionValue": optionValue.text}
 
         # 将数据写入 JSON 文件
-        with open("aaproperty.json", "w", encoding="utf-8") as json_file:
+        with open("wu_ye_json/aaproperty.json", "w", encoding="utf-8") as json_file:
             json.dump(output_data, json_file, ensure_ascii=False, indent=4)
 
         print("数据已写入 aaproperty.json")
@@ -153,7 +153,7 @@ def scrape_aa_property(url, bid):
 
 def handle_data():
     # 读取 JSON 文件
-    with open("aaproperty.json", "r", encoding="utf-8") as json_file:
+    with open("wu_ye_json/aaproperty.json", "r", encoding="utf-8") as json_file:
         json_data = json.load(json_file)
     print("json_data['optionValue']", json_data["optionValue"])
     match = re.match(r"(.+?) \| (.+)", json_data["optionValue"])
@@ -414,7 +414,7 @@ def handle_data():
             # product_id = mongo_db.insert_data('auction_lots', row_data)
             # print("Product document ID:", product_id)
 
-            json_detail_filename = f"aaproperty_detail.json"
+            json_detail_filename = f"wu_ye_json/aaproperty_detail.json"
             # 检查文件是否存在
             if os.path.exists(json_detail_filename):
                 with open(json_detail_filename, "r", encoding="utf-8") as json_file:
@@ -434,7 +434,7 @@ def handle_data():
             print(f"数据已追加到 {json_detail_filename}")
 
 
-if __name__ == "__main__":
+def main():
     # print("mongoDB",mongo_db)
     reesponse_data = requests.get("https://www.aaproperty.com.hk/aa/bid_list.php")
     soup = BeautifulSoup(reesponse_data.text, "html.parser")
@@ -454,3 +454,7 @@ if __name__ == "__main__":
         # bid=bid
         auction_data = scrape_aa_property(url, bid)
         handle_data()
+
+
+if __name__ == "__main__":
+    main()
