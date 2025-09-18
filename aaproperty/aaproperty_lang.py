@@ -14,7 +14,7 @@ from db.mongo_connection import MongoDB
 # 连接到 MongoDB
 # mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
 mongo_db = MongoDB(
-    "mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin", "wu_ye_new"
+    "mongodb://starsnet:password@192.168.8.14:27017/?authSource=admin", "wu_ye_new"
 )
 
 

@@ -16,7 +16,7 @@ from db.mongo_connection import MongoDB
 # 连接到 MongoDB
 # mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
 mongo_db = MongoDB(
-    "mongodb://starsnet:password@192.168.3.19:27017/?authSource=admin", "wu_ye_new"
+    "mongodb://starsnet:password@192.168.8.14:27017/?authSource=admin", "wu_ye_new"
 )
 
 
@@ -82,6 +82,7 @@ def convert_time_format(time_str):
 
 
 def scrape_aa_property(url, cid, lang):
+    print("url", url)
     # 设置请求头，模拟浏览器访问
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -94,7 +95,6 @@ def scrape_aa_property(url, cid, lang):
 
         # 使用BeautifulSoup解析HTML
         soup = BeautifulSoup(response.text, "html.parser")
-
         # select_element = soup.select_one('select.form-select')
         # 拿到了拍卖的时间之类的
         # print("soup",select_element)
@@ -282,34 +282,34 @@ def handle_data(lang):
             #     row_data['google_link']=iframes.get('src')
 
             # print("iframes",iframes)
-            div_img = soup.select(".product-galleryslider a")
-            print("222222222", div_img)
-            # 提取所有 src 属性
-            img_srcs = [
-                img["href"].replace("../", "", 1)
-                for img in div_img
-                if img.get("href").replace("../", "", 1)
-            ]
-            for image in img_srcs[1:]:
-                try:
-                    print("halloxion", image)
-                    extension = image.split(".")[-1][0:3]
-                    if extension == "jpe":
-                        extension = "jpg"
-                    print("2222", extension)
-                    imgage_url = "https://www.chungsen.com.hk/" + image
-                    print("222222222", imgage_url)
-                    body = {"url": imgage_url, "extension": extension}
-                    res = requests.post(
-                        "https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
-                        json=body,
-                    )
-                    print("20002202020", res.text)
-                    if res.status_code == 200:
-                        row_data["image"].append(res.text)
-                        print("20002202020", row_data["image"])
-                except Exception as e:
-                    print("保存图片发生了错误:", str(e))
+            # div_img = soup.select(".product-galleryslider a")
+            # print("222222222", div_img)
+            # # 提取所有 src 属性
+            # img_srcs = [
+            #     img["href"].replace("../", "", 1)
+            #     for img in div_img
+            #     if img.get("href").replace("../", "", 1)
+            # ]
+            # for image in img_srcs[1:]:
+            #     try:
+            #         print("halloxion", image)
+            #         extension = image.split(".")[-1][0:3]
+            #         if extension == "jpe":
+            #             extension = "jpg"
+            #         print("2222", extension)
+            #         imgage_url = "https://www.chungsen.com.hk/" + image
+            #         print("222222222", imgage_url)
+            #         body = {"url": imgage_url, "extension": extension}
+            #         res = requests.post(
+            #             "https://file.starsnet.com.hk/api/upload/bucket-by-url/development",
+            #             json=body,
+            #         )
+            #         print("20002202020", res.text)
+            #         if res.status_code == 200:
+            #             row_data["image"].append(res.text)
+            #             print("20002202020", row_data["image"])
+            #     except Exception as e:
+            #         print("保存图片发生了错误:", str(e))
 
             # 假设每列的顺序是固定的
             # if cols.get('image'):
