@@ -182,10 +182,12 @@ def addCnLang(mergeData):
 
 
 def main():
-    merge("aaproperty")
-    merge("mwal")
-    merge("chungsen")
-
+    try:
+        merge("aaproperty")
+        merge("mwal")
+        merge("chungsen")
+    except Exception as e:
+        print(f"合并数据时出错: {e}")
     # with open("wu_ye_json/merge/merge_detail_backup.json", "r", encoding="utf-8") as f2:
     #     mergeData = json.load(f2)
     # addCnLang(mergeData=mergeData)

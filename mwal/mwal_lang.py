@@ -12,12 +12,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from db.mongo_connection import MongoDB
+from dotenv import load_dotenv
+from handler_request import http_request
 
+
+load_dotenv()
 # 连接到 MongoDB
 # mongo_db = MongoDB('mongodb://starsnet:sincostan@office.starsnet.com.hk:27047,office.starsnet.com.hk:27048,office.starsnet.com.hk:27049/?authSource=admin&replicaSet=dbrs&readPreference=primary&appname=MongoDB%20Compass&ssl=false', 'test_auction')
-mongo_db = MongoDB(
-    "mongodb://starsnet:password@192.168.8.14:27017/?authSource=admin", "wu_ye_new"
-)
+mongo_db = MongoDB(os.getenv("MONGO_URL"), os.getenv("DB_NAME"))
+COMMON_URL = os.getenv("COMMON_URL")
 
 
 def clean_property_address(text):
@@ -48,18 +51,40 @@ def clean_property_address(text):
     return cleaned_text
 
 
+def get_nested_value(data, field):
+    keys = field.split(".")  # 将字段名拆分为多个键
+    for key in keys:
+        if isinstance(data, dict) and key in data:
+            data = data[key]
+        else:
+            return None  # 如果找不到键，则返回 None
+    return data
+
+
 def safe_insert_user(collection_name, filed, field2, user_data):
     # 先查询是否已存在
-    existing = mongo_db.find_one(
-        collection_name,
-        {filed: user_data[filed], field2: user_data[field2]},  # 按username查重
+    field_value = get_nested_value(user_data, filed)
+    field2_value = get_nested_value(user_data, field2)
+    result = http_request(
+        "GET",
+        f"{COMMON_URL}/common/getOne/{collection_name}?{filed}={field_value}&{field2}={field2_value}",
     )
-    # print("existing",existing.get('auction_id'))
-    if existing:
-        print(f"用户已存在，跳过插入")
-        return existing
-    else:
+    if result is None:
         return False
+    if result.get("data", None) is None:
+        return False
+    return result.get("data", None)
+    # existing = mongo_db.find_one(
+    #     collection_name,
+    #     {filed: user_data[filed], field2: user_data[field2]},  # 按username查重
+    # )
+
+    # # print("existing",existing.get('auction_id'))
+    # if existing:
+    #     print(f"用户已存在，跳过插入")
+    #     return existing
+    # else:
+    #     return False
 
 
 def convert_time_format(time_str):
@@ -201,7 +226,8 @@ def handle_data(lang):
     flag = None
     inserted_id = ""
     if lang == "tc":
-        flag = safe_insert_user("auction", "time", "company", data)
+        # flag = safe_insert_user("auction", "time", "company", data)
+        flag = safe_insert_user("MAuction", "time", "company.en", data)
         # company_flag = safe_insert_user('auction','company',data)
         print("flag11111", flag)
         if not flag:
@@ -243,8 +269,11 @@ def handle_data(lang):
             .replace("\r", "")
         )
         # 用property_address来判断数据库是不是有
+        # wuye_flag = safe_insert_user(
+        #     "auction_lots", "property_address", "auction_id", row_data
+        # )
         wuye_flag = safe_insert_user(
-            "auction_lots", "property_address", "auction_id", row_data
+            "MAuctionLots", "property_address.en", "auction_id", row_data
         )
         print("wuye_flag", wuye_flag)
         if not wuye_flag:
